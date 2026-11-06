@@ -7,6 +7,7 @@ import { sound } from './audio/soundEffects';
 import confetti from 'canvas-confetti';
 import { solveClosestPairDC } from './algorithms/closestPair';
 import { solveSkylineDC } from './algorithms/skyline';
+import { solveInversionsDC } from './algorithms/inversionCount';
 
 export default function App() {
   const [activeMission, setActiveMission] = useState(1);
@@ -52,7 +53,7 @@ export default function App() {
     skyline: [],
 
     // Mission 3: Inversions (prep)
-    array: [8, 4, 2, 1],
+    array: [8, 4, 2, 1, 9, 3, 7, 5],
     inversions: 0,
 
     // Mission 4: QuickSelect (prep)
@@ -125,8 +126,15 @@ export default function App() {
       setCurrentStepIndex(0);
       setIsPlaying(true);
       setIsExecuting(true);
+    } else if (activeMission === 3) {
+      sound.playLaser();
+      const result = solveInversionsDC(missionState.array);
+      setExecutionSteps(result.steps);
+      setCurrentStepIndex(0);
+      setIsPlaying(true);
+      setIsExecuting(true);
     }
-  }, [activeMission, missionState.points, missionState.buildings]);
+  }, [activeMission, missionState.points, missionState.buildings, missionState.array]);
 
   // Handle auto-step playback timer
   useEffect(() => {
@@ -160,6 +168,13 @@ export default function App() {
                   skyline: step.data.finalSkyline,
                 }));
                 setScore((s) => s + 600);
+              } else if (activeMission === 3 && step.data) {
+                setMissionState((prev) => ({
+                  ...prev,
+                  array: step.data.finalSorted,
+                  inversions: step.data.totalInversions,
+                }));
+                setScore((s) => s + step.data.totalInversions * 150 + 400);
               }
             }
             return next;
@@ -197,6 +212,13 @@ export default function App() {
               skyline: step.data.finalSkyline,
             }));
             setScore((sc) => sc + 600);
+          } else if (activeMission === 3 && step.data) {
+            setMissionState((s) => ({
+              ...s,
+              array: step.data.finalSorted,
+              inversions: step.data.totalInversions,
+            }));
+            setScore((sc) => sc + step.data.totalInversions * 150 + 400);
           }
         }
         return next;
@@ -220,6 +242,12 @@ export default function App() {
       setMissionState((prev) => ({
         ...prev,
         skyline: [],
+      }));
+    } else if (activeMission === 3) {
+      setMissionState((prev) => ({
+        ...prev,
+        array: [8, 4, 2, 1, 9, 3, 7, 5],
+        inversions: 0,
       }));
     }
   };

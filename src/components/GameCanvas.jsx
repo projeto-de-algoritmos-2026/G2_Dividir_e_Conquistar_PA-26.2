@@ -297,39 +297,59 @@ export default function GameCanvas({
   const drawInversionVisuals = (ctx, width, height, state, currentStep) => {
     const array = state?.array || [];
     const inversions = state?.inversions ?? 0;
-    const startX = 60;
-    const cardW = 60;
-    const cardH = 70;
-    const baseY = 160;
+    const startX = 40;
+    const cardW = 54;
+    const cardH = 68;
+    const baseY = 175;
 
     // Draw Chaos Boss in background
     ctx.save();
-    ctx.font = '40px monospace';
-    ctx.fillText('👹', width / 2 - 25, 90);
-    ctx.fillStyle = '#e94560';
+    const isBossHit = currentStep?.type === 'INVERSION_FOUND';
+    ctx.font = isBossHit ? '48px monospace' : '42px monospace';
+    ctx.fillText('👹', width / 2 - 25, 85);
+
+    ctx.fillStyle = isBossHit ? '#ff4757' : '#e94560';
     ctx.font = '10px "Press Start 2P"';
-    ctx.fillText(`BOSS DE CAOS: ${inversions} MALDIÇÕES`, width / 2 - 110, 120);
+    ctx.fillText(`BOSS DE CAOS // INVERSÕES: ${inversions}`, width / 2 - 130, 115);
+
+    if (isBossHit) {
+      // Hit spark effect
+      ctx.fillStyle = '#f9ca24';
+      ctx.font = '12px "Press Start 2P"';
+      ctx.fillText(`-CRÍTICO! +${currentStep.data?.countAdded || 1} INVERSÕES`, width / 2 - 120, 50);
+    }
     ctx.restore();
+
+    // Draw Active Recursion status
+    if (currentStep?.message) {
+      ctx.save();
+      ctx.fillStyle = '#00d2d3';
+      ctx.font = '9px "Press Start 2P"';
+      ctx.fillText(`RECURSÃO: ${currentStep.type}`, startX, baseY - 20);
+      ctx.restore();
+    }
 
     // Draw Rune cards
     array.forEach((val, i) => {
-      const cx = startX + i * (cardW + 12);
+      const cx = startX + i * (cardW + 10);
       ctx.save();
-      ctx.fillStyle = '#1e272e';
-      ctx.strokeStyle = '#f9ca24';
-      ctx.lineWidth = 3;
+
+      const isHighlight = currentStep?.data?.merged?.includes(val);
+      ctx.fillStyle = isHighlight ? '#1a2a3a' : '#1e272e';
+      ctx.strokeStyle = isHighlight ? '#00d2d3' : '#f9ca24';
+      ctx.lineWidth = isHighlight ? 4 : 2;
       ctx.fillRect(cx, baseY, cardW, cardH);
       ctx.strokeRect(cx, baseY, cardW, cardH);
 
       // Card value
       ctx.fillStyle = '#ffffff';
-      ctx.font = '18px "Press Start 2P"';
-      ctx.fillText(String(val), cx + 18, baseY + 42);
+      ctx.font = '16px "Press Start 2P"';
+      ctx.fillText(String(val), cx + 16, baseY + 42);
 
       // Index label
       ctx.fillStyle = '#a4b0be';
       ctx.font = '9px "VT323"';
-      ctx.fillText(`slot ${i}`, cx + 14, baseY + cardH + 14);
+      ctx.fillText(`slot ${i}`, cx + 12, baseY + cardH + 14);
       ctx.restore();
     });
   };
