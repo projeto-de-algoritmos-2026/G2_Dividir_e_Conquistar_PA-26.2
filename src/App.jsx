@@ -250,6 +250,19 @@ export default function App() {
     }
   };
 
+  // Collect Chest reward in Skyline mission
+  const handleCollectChest = () => {
+    sound.playVictory();
+    try {
+      confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+    } catch {}
+    setScore((s) => s + 1000);
+    setMissionState((prev) => ({
+      ...prev,
+      chestCollected: true,
+    }));
+  };
+
   // Reset steps
   const handleReset = () => {
     setIsPlaying(false);
@@ -266,6 +279,7 @@ export default function App() {
       setMissionState((prev) => ({
         ...prev,
         skyline: [],
+        chestCollected: false,
       }));
     } else if (activeMission === 3) {
       setMissionState((prev) => ({
@@ -320,6 +334,10 @@ export default function App() {
         <section className="lg:col-span-7 flex flex-col items-center">
           <GameCanvas
             activeMission={activeMission}
+            setActiveMission={(mId) => {
+              handleReset();
+              setActiveMission(mId);
+            }}
             onTriggerAlgorithm={handleTriggerAlgorithm}
             isExecuting={isExecuting}
             executionSteps={executionSteps}
@@ -327,6 +345,7 @@ export default function App() {
             missionState={missionState}
             setMissionState={setMissionState}
             onHeroPositionChange={setHeroPosition}
+            onCollectChest={handleCollectChest}
           />
           <MissionActionBar
             activeMission={activeMission}

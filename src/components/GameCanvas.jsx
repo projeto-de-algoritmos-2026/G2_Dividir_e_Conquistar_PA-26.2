@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { drawPixelHero, drawDungeonBackground } from '../game/spriteRenderer';
+import { drawCharacter, drawDungeonBackground } from '../game/spriteRenderer';
 import { sound } from '../audio/soundEffects';
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Zap, Play, RefreshCw, Eye } from 'lucide-react';
 
 export default function GameCanvas({
   activeMission,
+  setActiveMission,
   onTriggerAlgorithm,
   isExecuting,
   executionSteps,
@@ -12,6 +13,7 @@ export default function GameCanvas({
   missionState,
   setMissionState,
   onHeroPositionChange,
+  onCollectChest,
 }) {
   const canvasRef = useRef(null);
   
@@ -122,14 +124,55 @@ export default function GameCanvas({
         onHeroPositionChange({ x: hero.x, y: hero.y });
       }
 
+      // Check Chest collision in Mission 2
+      if (activeMission === 2 && missionState?.skyline?.length > 0 && !missionState.chestCollected) {
+        if (hero.x >= 630 && hero.y >= 300) {
+          if (onCollectChest) onCollectChest();
+        }
+      }
+
       // 1. Draw Dungeon Floor
       drawDungeonBackground(ctx, width, height);
 
       // 2. Draw Mission Specific Visuals
       drawMissionLayer(ctx, width, height, activeMission, missionState, executionSteps, currentStepIndex);
 
-      // 3. Draw Player Hero
-      drawPixelHero(ctx, hero.x, hero.y, hero.direction, hero.frame, hero.isCasting);
+      // 3. Draw Squad Formation (Allies on tactical squad bench in arena)
+      const squad = [
+        { id: 1, type: 'mage', name: 'Mago' },
+        { id: 2, type: 'knight', name: 'Cavaleiro' },
+        { id: 3, type: 'barbarian', name: 'Bárbaro' },
+        { id: 4, type: 'assassin', name: 'Assassino' },
+      ];
+
+      // Draw active hero at controllable position (hero.x, hero.y)
+      const activeType = squad.find(s => s.id === activeMission)?.type || 'mage';
+      drawCharacter(ctx, hero.x, hero.y, activeType, hero.direction, hero.frame, hero.isCasting, true);
+
+      // Draw Squad Bench in bottom-left corner with party members
+      ctx.save();
+      ctx.fillStyle = 'rgba(15, 15, 30, 0.85)';
+      ctx.fillRect(15, height - 68, 260, 56);
+      ctx.strokeStyle = '#39395f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(15, height - 68, 260, 56);
+
+      ctx.fillStyle = '#00d2d3';
+      ctx.font = '7px "Press Start 2P"';
+      ctx.fillText('TIME DE HERÓIS NA ARENA:', 22, height - 52);
+
+      squad.forEach((member, idx) => {
+        const mx = 40 + idx * 62;
+        const my = height - 26;
+        const isCurrent = member.id === activeMission;
+
+        drawCharacter(ctx, mx, my, member.type, 'down', isCurrent ? hero.frame : 0, false, isCurrent);
+
+        ctx.fillStyle = isCurrent ? '#f9ca24' : '#a4b0be';
+        ctx.font = '6px "Press Start 2P"';
+        ctx.fillText(member.name, mx - 16, height - 14);
+      });
+      ctx.restore();
 
       // 4. Draw Floating UI Tips on Canvas
       drawCanvasOverlay(ctx, width, height, hero);
@@ -292,9 +335,22 @@ export default function GameCanvas({
 
       // Golden Goal / Chest at the end of skyline
       const lastPoint = skylinePoints[skylinePoints.length - 1];
+      const chestX = (lastPoint?.x || width - 80) + 10;
+      const isCollected = state?.chestCollected;
+
       ctx.fillStyle = '#f9ca24';
-      ctx.font = '20px monospace';
-      ctx.fillText('🏆', (lastPoint?.x || width - 80) + 10, groundY - 10);
+      ctx.font = '22px monospace';
+      ctx.fillText(isCollected ? '🎁✨' : '🏆', chestX, groundY - 12);
+
+      if (isCollected) {
+        ctx.fillStyle = '#2ed573';
+        ctx.font = '8px "Press Start 2P"';
+        ctx.fillText('+1000 TESOURO!', chestX - 40, groundY - 35);
+      } else {
+        ctx.fillStyle = '#f9ca24';
+        ctx.font = '7px "Press Start 2P"';
+        ctx.fillText('CAMINHE ATE AQUI', chestX - 50, groundY - 35);
+      }
       ctx.restore();
     }
   };
@@ -471,6 +527,43 @@ export default function GameCanvas({
     }, 150);
   };
 
+  // Canvas click handler: squad selection, spawn points or trigger action
+  const handleCanvasClick = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clickX = Math.round((e.clientX - rect.left) * scaleX);
+    const clickY = Math.round((e.clientY - rect.top) * scaleY);
+
+    // Clicked on Squad bench to select hero
+    if (clickY >= 420 - 68 && clickX <= 275 && setActiveMission) {
+      sound.playClick();
+      const squadIdx = Math.floor((clickX - 15) / 65);
+      const chosenId = Math.min(4, Math.max(1, squadIdx + 1));
+      setActiveMission(chosenId);
+      return;
+    }
+
+    if (activeMission === 1 && !isExecuting) {
+      sound.playPowerup();
+      const newId = (missionState.points?.length || 0) + 1;
+      setMissionState((prev) => ({
+        ...prev,
+        points: [...(prev.points || []), { id: newId, x: clickX, y: clickY }],
+        bestPair: null,
+        minDist: null,
+      }));
+    } else {
+      heroRef.current.isCasting = true;
+      onTriggerAlgorithm();
+      setTimeout(() => {
+        heroRef.current.isCasting = false;
+      }, 300);
+    }
+  };
+
   return (
     <div className="relative flex flex-col items-center">
       {/* 2D Pixel Canvas */}
@@ -480,13 +573,7 @@ export default function GameCanvas({
           width={760}
           height={420}
           className="block max-w-full h-auto cursor-crosshair"
-          onClick={() => {
-            heroRef.current.isCasting = true;
-            onTriggerAlgorithm();
-            setTimeout(() => {
-              heroRef.current.isCasting = false;
-            }, 300);
-          }}
+          onClick={handleCanvasClick}
         />
 
         {/* Action Trigger Banner */}
