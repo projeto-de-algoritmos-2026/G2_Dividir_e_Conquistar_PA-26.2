@@ -136,3 +136,4 @@ export function drawDungeonBackground(ctx, width, height) {
   ctx.lineWidth = 2;
   ctx.strokeRect(6, 6, width - 12, height - 12);
 }
+

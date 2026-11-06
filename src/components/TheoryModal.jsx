@@ -157,3 +157,4 @@ export default function TheoryModal({ isOpen, onClose }) {
     </div>
   );
 }
+

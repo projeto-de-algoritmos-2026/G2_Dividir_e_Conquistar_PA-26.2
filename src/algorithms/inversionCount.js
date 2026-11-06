@@ -119,3 +119,4 @@ export function solveInversionsDC(originalArray) {
     steps,
   };
 }
+

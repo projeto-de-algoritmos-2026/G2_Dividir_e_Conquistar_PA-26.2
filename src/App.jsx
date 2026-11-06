@@ -8,6 +8,7 @@ import confetti from 'canvas-confetti';
 import { solveClosestPairDC } from './algorithms/closestPair';
 import { solveSkylineDC } from './algorithms/skyline';
 import { solveInversionsDC } from './algorithms/inversionCount';
+import { solveQuickSelectDC } from './algorithms/quickSelect';
 
 export default function App() {
   const [activeMission, setActiveMission] = useState(1);
@@ -133,8 +134,15 @@ export default function App() {
       setCurrentStepIndex(0);
       setIsPlaying(true);
       setIsExecuting(true);
+    } else if (activeMission === 4) {
+      sound.playLaser();
+      const result = solveQuickSelectDC(missionState.monsters, missionState.targetK);
+      setExecutionSteps(result.steps);
+      setCurrentStepIndex(0);
+      setIsPlaying(true);
+      setIsExecuting(true);
     }
-  }, [activeMission, missionState.points, missionState.buildings, missionState.array]);
+  }, [activeMission, missionState.points, missionState.buildings, missionState.array, missionState.monsters, missionState.targetK]);
 
   // Handle auto-step playback timer
   useEffect(() => {
@@ -175,6 +183,13 @@ export default function App() {
                   inversions: step.data.totalInversions,
                 }));
                 setScore((s) => s + step.data.totalInversions * 150 + 400);
+              } else if (activeMission === 4 && step.data) {
+                setMissionState((prev) => ({
+                  ...prev,
+                  monsters: step.data.monsters,
+                  targetFound: step.data.finalTarget,
+                }));
+                setScore((s) => s + 750);
               }
             }
             return next;
@@ -219,6 +234,13 @@ export default function App() {
               inversions: step.data.totalInversions,
             }));
             setScore((sc) => sc + step.data.totalInversions * 150 + 400);
+          } else if (activeMission === 4 && step.data) {
+            setMissionState((s) => ({
+              ...s,
+              monsters: step.data.monsters,
+              targetFound: step.data.finalTarget,
+            }));
+            setScore((sc) => sc + 750);
           }
         }
         return next;
@@ -248,6 +270,20 @@ export default function App() {
         ...prev,
         array: [8, 4, 2, 1, 9, 3, 7, 5],
         inversions: 0,
+      }));
+    } else if (activeMission === 4) {
+      setMissionState((prev) => ({
+        ...prev,
+        monsters: [
+          { id: 1, power: 12, eliminated: false },
+          { id: 2, power: 45, eliminated: false },
+          { id: 3, power: 23, eliminated: false },
+          { id: 4, power: 88, eliminated: false },
+          { id: 5, power: 34, eliminated: false },
+          { id: 6, power: 67, eliminated: false },
+          { id: 7, power: 5, eliminated: false },
+        ],
+        targetFound: null,
       }));
     }
   };

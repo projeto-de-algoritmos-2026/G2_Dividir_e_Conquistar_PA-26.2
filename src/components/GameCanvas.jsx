@@ -356,35 +356,71 @@ export default function GameCanvas({
 
   const drawQuickSelectVisuals = (ctx, width, height, state, currentStep) => {
     const monsters = state?.monsters || [];
-    const targetK = state?.targetK ?? 3;
+    const targetK = state?.targetK ?? 4;
     const targetFound = state?.targetFound;
-    const startX = 50;
+    const startX = 36;
+    const spacing = 72;
 
     ctx.save();
     ctx.fillStyle = '#f9ca24';
-    ctx.font = '10px "Press Start 2P"';
-    ctx.fillText(`OBJETIVO: Encontrar o ${targetK}º Monstro mais forte com QuickSelect`, startX, 40);
+    ctx.font = '9px "Press Start 2P"';
+    ctx.fillText(`SNIPER QUICKSELECT // META: ${targetK}º MONSTRO MAIS FORTE`, startX, 35);
+
+    if (currentStep?.message) {
+      ctx.fillStyle = '#00d2d3';
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillText(`ETAPA: ${currentStep.type}`, startX, 55);
+    }
     ctx.restore();
 
     monsters.forEach((m, i) => {
-      const x = startX + i * 58;
-      const y = 140;
+      const x = startX + i * spacing;
+      const y = 145;
       const isTarget = targetFound && targetFound.id === m.id;
       const isEliminated = m.eliminated;
+      const isPivot = currentStep?.data?.pivot?.id === m.id;
 
       ctx.save();
       ctx.globalAlpha = isEliminated ? 0.25 : 1.0;
 
-      // Draw monster avatar
-      ctx.font = '24px monospace';
-      ctx.fillText(isTarget ? '👑' : '👾', x, y);
+      // Draw monster platform
+      ctx.fillStyle = isTarget ? '#241c12' : '#141424';
+      ctx.strokeStyle = isPivot ? '#f9ca24' : (isTarget ? '#2ed573' : '#39395f');
+      ctx.lineWidth = isPivot || isTarget ? 3 : 1.5;
+      ctx.fillRect(x - 10, y - 10, 60, 85);
+      ctx.strokeRect(x - 10, y - 10, 60, 85);
+
+      // Monster icon
+      ctx.font = isTarget ? '32px monospace' : '26px monospace';
+      ctx.fillText(isTarget ? '👑' : (isEliminated ? '💀' : '👾'), x + 6, y + 25);
+
+      // Monster ID
+      ctx.fillStyle = '#a4b0be';
+      ctx.font = '9px "VT323"';
+      ctx.fillText(`#${m.id}`, x - 4, y + 4);
 
       // Power badge
-      ctx.fillStyle = isTarget ? '#f9ca24' : '#00d2d3';
-      ctx.fillRect(x - 5, y + 8, 36, 16);
+      ctx.fillStyle = isTarget ? '#2ed573' : (isPivot ? '#f9ca24' : '#00d2d3');
+      ctx.fillRect(x - 4, y + 42, 48, 16);
       ctx.fillStyle = '#000000';
-      ctx.font = '10px "Press Start 2P"';
-      ctx.fillText(String(m.power), x, y + 20);
+      ctx.font = '9px "Press Start 2P"';
+      ctx.fillText(`P:${m.power}`, x - 1, y + 54);
+
+      if (isPivot) {
+        ctx.fillStyle = '#f9ca24';
+        ctx.font = '8px "Press Start 2P"';
+        ctx.fillText('PIVÔ', x + 4, y + 72);
+      }
+
+      if (isEliminated) {
+        ctx.strokeStyle = '#e94560';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y - 10);
+        ctx.lineTo(x + 50, y + 75);
+        ctx.stroke();
+      }
+
       ctx.restore();
     });
   };
