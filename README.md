@@ -17,9 +17,14 @@
 
 ## 🎮 Sobre o Projeto
 
-**Pixel Conquer** é um jogo/laboratório interativo em **Pixel Art 2D retrô (16-bit)** desenvolvido com **React, JavaScript e Vite**. O usuário assume o controle de um mago herói que explora uma masmorra mística onde as mecânicas centrais de sobrevivência, combate e resolução de enigmas são impulsionadas diretamente por **4 algoritmos fundamentais de Dividir e Conquistar**.
+**Pixel Conquer** é um RPG tático e laboratório de algoritmos interativo em **Pixel Art 2D retrô (16-bit)** desenvolvido com **React, JavaScript e Vite**. O usuário comanda um esquadrão composto por **4 classes de heróis clássicos de RPG** dentro de uma arena de batalha:
 
-Em vez de apenas ler sobre teoria de complexidade, o jogador movimenta o herói em tempo real pelo mapa, desvia de perigos e conjura magias algorítmicas, visualizando passo a passo como as chamadas recursivas dividem a arena, resolvem os subproblemas e combinam as soluções parciais.
+* 🧙‍♂️ **Mago Arcana** (Fase 1: Par de Pontos Mais Próximos - $O(n \log n)$)
+* ⚔️ **Cavaleiro Real** (Fase 2: Problema do Skyline / Pontes e Muralhas - $O(n \log n)$)
+* 🪓 **Bárbaro Feroz** (Fase 3: Contagem de Inversões / Altar do Caos - $O(n \log n)$)
+* 🗡️ **Assassino das Sombras** (Fase 4: QuickSelect / Eliminação de Alvos - $O(n)$ médio)
+
+A janela esquerda é a **Arena de Combate** onde todo o time se posiciona em formação tática e o herói selecionado é controlado em tempo real (`W, A, S, D` ou setas). A janela direita é o **Dashboard Tático de Comando**, onde o usuário escolhe qual membro do time vai agir, seleciona habilidades de Dividir e Conquistar vs Força Bruta ($O(n^2)$), e controla passo a passo o visualizador de recursão.
 
 ---
 

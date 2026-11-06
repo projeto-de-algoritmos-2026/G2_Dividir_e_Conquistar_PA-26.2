@@ -30,10 +30,10 @@ export default function TheoryModal({ isOpen, onClose }) {
         <div className="flex border-b-2 border-[#39395f] bg-[#0d0d1a] overflow-x-auto text-xs">
           {[
             { id: 'overview', label: 'Paradigma D&C' },
-            { id: 'closest', label: '1. Closest Pair' },
-            { id: 'skyline', label: '2. Skyline Problem' },
-            { id: 'inversion', label: '3. Inversões' },
-            { id: 'quickselect', label: '4. QuickSelect' },
+            { id: 'closest', label: '🧙 Mago (Closest Pair)' },
+            { id: 'skyline', label: '⚔️ Cavaleiro (Skyline)' },
+            { id: 'inversion', label: '🪓 Bárbaro (Inversões)' },
+            { id: 'quickselect', label: '🗡️ Assassino (QuickSelect)' },
           ].map((tab) => (
             <button
               key={tab.id}
