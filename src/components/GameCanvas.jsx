@@ -11,6 +11,7 @@ export default function GameCanvas({
   currentStepIndex,
   missionState,
   setMissionState,
+  onHeroPositionChange,
 }) {
   const canvasRef = useRef(null);
   
@@ -116,6 +117,10 @@ export default function GameCanvas({
       const margin = 30;
       hero.x = Math.max(margin, Math.min(width - margin, hero.x));
       hero.y = Math.max(margin, Math.min(height - margin, hero.y));
+
+      if (hero.isMoving && onHeroPositionChange && hero.animTimer % 15 === 0) {
+        onHeroPositionChange({ x: hero.x, y: hero.y });
+      }
 
       // 1. Draw Dungeon Floor
       drawDungeonBackground(ctx, width, height);
@@ -460,6 +465,9 @@ export default function GameCanvas({
 
     setTimeout(() => {
       hero.isMoving = false;
+      if (onHeroPositionChange) {
+        onHeroPositionChange({ x: hero.x, y: hero.y });
+      }
     }, 150);
   };
 

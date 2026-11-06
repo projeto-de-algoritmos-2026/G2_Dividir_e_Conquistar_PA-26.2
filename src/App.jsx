@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import RetroHUD from './components/RetroHUD';
 import GameCanvas from './components/GameCanvas';
 import AlgorithmTerminal from './components/AlgorithmTerminal';
+import MissionActionBar from './components/MissionActionBar';
 import TheoryModal from './components/TheoryModal';
 import { sound } from './audio/soundEffects';
 import confetti from 'canvas-confetti';
@@ -17,6 +18,7 @@ export default function App() {
   const [mana, setMana] = useState(100);
   const [maxMana] = useState(100);
   const [score, setScore] = useState(0);
+  const [heroPosition, setHeroPosition] = useState({ x: 400, y: 250 });
   const [isMuted, setIsMuted] = useState(false);
   const [isTheoryOpen, setIsTheoryOpen] = useState(false);
 
@@ -324,6 +326,15 @@ export default function App() {
             currentStepIndex={currentStepIndex}
             missionState={missionState}
             setMissionState={setMissionState}
+            onHeroPositionChange={setHeroPosition}
+          />
+          <MissionActionBar
+            activeMission={activeMission}
+            missionState={missionState}
+            setMissionState={setMissionState}
+            heroPosition={heroPosition}
+            isExecuting={isExecuting}
+            onReset={handleReset}
           />
         </section>
 
