@@ -6,6 +6,7 @@ export default function TacticalDashboard({
   activeHeroId,
   onSelectHero,
   onTriggerAlgorithm,
+  onTriggerBruteForce,
   isExecuting,
   executionSteps = [],
   currentStepIndex,
@@ -36,14 +37,14 @@ export default function TacticalDashboard({
       id: 2,
       type: 'knight',
       name: 'Cavaleiro Real',
-      title: 'Arquiteto de Muralhas',
+      title: 'Canhão de Cerco Karatsuba',
       icon: '⚔️',
       hp: '150/150',
       mana: '50/50',
-      algoName: 'Ponte da Silhueta',
-      algoType: 'Problema do Skyline',
-      complexity: 'O(n log n)',
-      desc: 'Mescla silhuetas de fortalezas para erguer a ponte sólida.',
+      algoName: 'Canhão Karatsuba',
+      algoType: 'Multiplicação Rápida de Inteiros',
+      complexity: 'O(n^1.585)',
+      desc: 'Multiplicação de inteiros gigantes com 3 produtos recursivos em vez de 4.',
       accent: 'border-[#f9ca24]',
       bgAccent: 'bg-[#f9ca24]/15',
     },
@@ -196,16 +197,29 @@ export default function TacticalDashboard({
             </span>
           </button>
 
-          {/* Theoretical comparison attack: Brute Force */}
-          <div className="p-2 bg-[#18182b] border border-[#39395f] flex flex-col justify-center text-xs">
-            <div className="flex items-center justify-between text-gray-400">
-              <span className="font-pixel text-[8px] text-[#e94560]">VS FORÇA BRUTA:</span>
-              <span className="font-pixel text-[8px] text-red-400">O(n²)</span>
+          {/* Interactive comparison attack: Brute Force */}
+          <button
+            onClick={() => {
+              sound.playExplosion();
+              if (onTriggerBruteForce) onTriggerBruteForce();
+            }}
+            disabled={isExecuting}
+            className="p-2 bg-[#2a131b] hover:bg-[#3d1a27] border-2 border-[#e94560] text-left flex flex-col justify-between text-xs shadow-pixel-sm active:translate-y-0.5 cursor-pointer disabled:opacity-50"
+            title="Executar Força Bruta O(n²) para comparar o desempenho"
+          >
+            <div className="flex items-center justify-between text-gray-300">
+              <span className="font-pixel text-[8px] text-[#ff4757] flex items-center gap-1">
+                <ShieldAlert className="w-3.5 h-3.5" />
+                TESTAR FORÇA BRUTA:
+              </span>
+              <span className="font-pixel text-[8px] bg-[#ff4757] text-white px-1 py-0.2">
+                O(n²)
+              </span>
             </div>
-            <div className="text-[11px] text-gray-300 mt-0.5">
-              D&C reduz milhares de cálculos desnecessários através de recursão e merge inteligente.
+            <div className="text-[11px] text-gray-300 mt-1">
+              Verifique todos os pares sequencialmente para comparar a quantidade massiva de operações.
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -310,3 +324,4 @@ export default function TacticalDashboard({
     </div>
   );
 }
+

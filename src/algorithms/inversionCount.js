@@ -2,6 +2,52 @@
 // Time Complexity: O(n log n) with T(n) = 2T(n/2) + O(n)
 // Measures the chaos/disorder level of the boss runes.
 
+export function solveInversionsBruteForce(arr) {
+  const steps = [];
+  let inversions = 0;
+  const n = arr.length;
+  const pairs = [];
+
+  steps.push({
+    type: 'BRUTE_INIT',
+    message: `[FORÇA BRUTA O(n²)] Verificando todos os ${Math.round(n * (n - 1) / 2)} pares possíveis nas runas.`,
+    data: { array: [...arr] }
+  });
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const isInversion = arr[i] > arr[j];
+      if (isInversion) {
+        inversions++;
+        pairs.push([arr[i], arr[j]]);
+      }
+
+      steps.push({
+        type: isInversion ? 'INVERSION_FOUND' : 'BRUTE_CHECK',
+        message: `Comparando slot ${i} (Runa ${arr[i]}) com slot ${j} (Runa ${arr[j]}): ${isInversion ? `⚡ INVERSÃO! (${arr[i]} > ${arr[j]})` : 'Ordem Correta'}`,
+        data: {
+          leftItem: arr[i],
+          rightItem: arr[j],
+          inversions,
+          countAdded: isInversion ? 1 : 0
+        }
+      });
+    }
+  }
+
+  steps.push({
+    type: 'COMPLETED',
+    message: `[FORÇA BRUTA CONCLUÍDA] Total de ${inversions} inversões encontradas após checar todos os pares sequencialmente.`,
+    data: {
+      finalSorted: [...arr].sort((a, b) => a - b),
+      totalInversions: inversions,
+      isBruteForce: true
+    }
+  });
+
+  return { inversions, steps };
+}
+
 export function solveInversionsDC(originalArray) {
   const steps = [];
   let totalInversions = 0;
@@ -80,7 +126,7 @@ export function solveInversionsDC(originalArray) {
 
         steps.push({
           type: 'INVERSION_FOUND',
-          message: `⚡ MALDIÇÃO DETECTADA: Runa ${right[j]} &lt; Runa ${left[i]}! Gera ${count} inversões com [${left.slice(i).join(', ')}].`,
+          message: `⚡ MALDIÇÃO DETECTADA: Runa ${right[j]} < Runa ${left[i]}! Gera ${count} inversões com [${left.slice(i).join(', ')}].`,
           data: { leftItem: left[i], rightItem: right[j], countAdded: count }
         });
 
@@ -110,6 +156,7 @@ export function solveInversionsDC(originalArray) {
     data: {
       finalSorted: finalResult.sorted,
       totalInversions,
+      isBruteForce: false
     }
   });
 
@@ -119,4 +166,3 @@ export function solveInversionsDC(originalArray) {
     steps,
   };
 }
-

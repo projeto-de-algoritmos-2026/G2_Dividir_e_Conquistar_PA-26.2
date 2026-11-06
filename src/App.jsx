@@ -7,7 +7,7 @@ import TheoryModal from './components/TheoryModal';
 import { sound } from './audio/soundEffects';
 import confetti from 'canvas-confetti';
 import { solveClosestPairDC } from './algorithms/closestPair';
-import { solveSkylineDC } from './algorithms/skyline';
+import { solveKaratsubaDC } from './algorithms/karatsuba';
 import { solveInversionsDC } from './algorithms/inversionCount';
 import { solveQuickSelectDC } from './algorithms/quickSelect';
 
@@ -45,15 +45,10 @@ export default function App() {
     bestPair: null,
     minDist: null,
 
-    // Mission 2: Skyline (prep)
-    buildings: [
-      { left: 60, height: 160, right: 180 },
-      { left: 140, height: 220, right: 280 },
-      { left: 240, height: 120, right: 360 },
-      { left: 400, height: 200, right: 540 },
-      { left: 500, height: 140, right: 650 },
-    ],
-    skyline: [],
+    // Mission 2: Cavaleiro - Karatsuba
+    karatsubaX: 1234,
+    karatsubaY: 5678,
+    karatsubaProduct: null,
 
     // Mission 3: Inversions (prep)
     array: [8, 4, 2, 1, 9, 3, 7, 5],
@@ -123,8 +118,8 @@ export default function App() {
       setIsPlaying(true);
       setIsExecuting(true);
     } else if (activeMission === 2) {
-      sound.playPowerup();
-      const result = solveSkylineDC(missionState.buildings);
+      sound.playExplosion();
+      const result = solveKaratsubaDC(missionState.karatsubaX, missionState.karatsubaY);
       setExecutionSteps(result.steps);
       setCurrentStepIndex(0);
       setIsPlaying(true);
@@ -157,7 +152,7 @@ export default function App() {
             const step = executionSteps[next];
             if (step?.type === 'DIVIDE') {
               sound.playLaser();
-            } else if (step?.type === 'STRIP_FOUND_BETTER' || step?.type === 'BASE_CASE' || step?.type === 'MERGE_SKYLINES') {
+            } else if (step?.type === 'STRIP_FOUND_BETTER' || step?.type === 'BASE_CASE' || step?.type === 'COMBINE_KARATSUBA') {
               sound.playPowerup();
             } else if (step?.type === 'COMPLETED') {
               sound.playVictory();
@@ -175,9 +170,9 @@ export default function App() {
               } else if (activeMission === 2 && step.data) {
                 setMissionState((prev) => ({
                   ...prev,
-                  skyline: step.data.finalSkyline,
+                  karatsubaProduct: step.data.finalProduct,
                 }));
-                setScore((s) => s + 600);
+                setScore((s) => s + 850);
               } else if (activeMission === 3 && step.data) {
                 setMissionState((prev) => ({
                   ...prev,
@@ -226,9 +221,9 @@ export default function App() {
           } else if (activeMission === 2 && step.data) {
             setMissionState((s) => ({
               ...s,
-              skyline: step.data.finalSkyline,
+              karatsubaProduct: step.data.finalProduct,
             }));
-            setScore((sc) => sc + 600);
+            setScore((sc) => sc + 850);
           } else if (activeMission === 3 && step.data) {
             setMissionState((s) => ({
               ...s,
@@ -278,8 +273,7 @@ export default function App() {
     } else if (activeMission === 2) {
       setMissionState((prev) => ({
         ...prev,
-        skyline: [],
-        chestCollected: false,
+        karatsubaProduct: null,
       }));
     } else if (activeMission === 3) {
       setMissionState((prev) => ({

@@ -7,23 +7,50 @@ export function distance(p1, p2) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-export function bruteForceClosestPair(points) {
+export function solveClosestPairBruteForce(points) {
+  const steps = [];
   let minDist = Infinity;
-  let pair = null;
+  let bestPair = null;
   let comparisons = 0;
+  const n = points.length;
 
-  for (let i = 0; i < points.length; i++) {
-    for (let j = i + 1; j < points.length; j++) {
+  steps.push({
+    type: 'BRUTE_INIT',
+    message: `[FORÇA BRUTA O(n²)] Iniciando checagem de todos os ${Math.round(n * (n - 1) / 2)} pares possíveis.`,
+    data: { points }
+  });
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
       comparisons++;
       const d = distance(points[i], points[j]);
-      if (d < minDist) {
+      const isNewBest = d < minDist;
+      if (isNewBest) {
         minDist = d;
-        pair = [points[i], points[j]];
+        bestPair = [points[i], points[j]];
       }
+
+      steps.push({
+        type: isNewBest ? 'STRIP_FOUND_BETTER' : 'BRUTE_CHECK',
+        message: `Comparando Alvo #${points[i].id} com Alvo #${points[j].id}: Distância = ${d.toFixed(1)}px (Comparação #${comparisons})${isNewBest ? ' ★ NOVO RECORDE!' : ''}`,
+        data: {
+          currentPair: [points[i], points[j]],
+          currentDist: d,
+          bestPair,
+          minDist,
+          comparisons
+        }
+      });
     }
   }
 
-  return { minDist, pair, comparisons };
+  steps.push({
+    type: 'COMPLETED',
+    message: `[FORÇA BRUTA CONCLUÍDA] Foram necessárias ${comparisons} comparações para encontrar a menor distância (${minDist.toFixed(1)}px).`,
+    data: { finalPair: bestPair, finalDist: minDist, comparisons, isBruteForce: true }
+  });
+
+  return { minDist, pair: bestPair, comparisons, steps };
 }
 
 export function solveClosestPairDC(points) {
@@ -42,7 +69,7 @@ export function solveClosestPairDC(points) {
   function closestPairRec(pts) {
     const n = pts.length;
 
-    // Base Case: 2 or 3 points -> Brute Force
+    // Base Case: 2 or 3 points -> Brute Force local
     if (n <= 3) {
       let minD = Infinity;
       let minPair = null;
@@ -130,8 +157,8 @@ export function solveClosestPairDC(points) {
 
   steps.push({
     type: 'COMPLETED',
-    message: `ALGORITMO CONCLUÍDO! Par Crítico detectado: Distância = ${result.dist.toFixed(1)}px com apenas ${comparisons} comparações (vs Brute Force ${Math.round(points.length * (points.length - 1) / 2)}).`,
-    data: { finalPair: result.pair, finalDist: result.dist, comparisons }
+    message: `ALGORITMO D&C CONCLUÍDO! Par Crítico detectado: Distância = ${result.dist.toFixed(1)}px com apenas ${comparisons} comparações (vs Força Bruta ${Math.round(points.length * (points.length - 1) / 2)}).`,
+    data: { finalPair: result.pair, finalDist: result.dist, comparisons, isBruteForce: false }
   });
 
   return {
@@ -141,4 +168,3 @@ export function solveClosestPairDC(points) {
     steps,
   };
 }
-

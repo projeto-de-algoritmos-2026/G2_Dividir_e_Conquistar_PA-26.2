@@ -48,24 +48,19 @@ export default function MissionActionBar({
     }));
   };
 
-  // Mission 2: Randomize buildings
-  const handleRandomizeBuildings = () => {
+  // Mission 2: Randomize Karatsuba numbers
+  const handleRandomizeKaratsuba = (digits = 4) => {
     sound.playClick();
     onReset();
-    const count = 5;
-    const newBuildings = [];
-    let curL = 50;
-    for (let i = 0; i < count; i++) {
-      const width = Math.round(90 + Math.random() * 90);
-      const height = Math.round(110 + Math.random() * 150);
-      const right = curL + width;
-      newBuildings.push({ left: curL, height, right });
-      curL += Math.round(width * 0.7); // overlap to test skyline merge
-    }
+    const min = Math.pow(10, digits - 1);
+    const max = Math.pow(10, digits) - 1;
+    const newX = Math.floor(min + Math.random() * (max - min + 1));
+    const newY = Math.floor(min + Math.random() * (max - min + 1));
     setMissionState((prev) => ({
       ...prev,
-      buildings: newBuildings,
-      skyline: [],
+      karatsubaX: newX,
+      karatsubaY: newY,
+      karatsubaProduct: null,
     }));
   };
 
@@ -155,12 +150,20 @@ export default function MissionActionBar({
       {activeMission === 2 && (
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={handleRandomizeBuildings}
+            onClick={() => handleRandomizeKaratsuba(4)}
             disabled={isExecuting}
             className="pixel-btn bg-[#1f1f38] text-gray-200 hover:text-white py-1 px-2 text-[8px] flex items-center gap-1.5"
           >
             <Dices className="w-3 h-3 text-[#f9ca24]" />
-            <span>Gerar Novas Torres</span>
+            <span>Gerar Novos Números (4 Dígitos)</span>
+          </button>
+          <button
+            onClick={() => handleRandomizeKaratsuba(6)}
+            disabled={isExecuting}
+            className="pixel-btn bg-[#2a1e12] text-[#f9ca24] hover:bg-[#3d2e1b] py-1 px-2 text-[8px] flex items-center gap-1.5 border-[#f9ca24]"
+          >
+            <Sparkles className="w-3 h-3" />
+            <span>Multiplicação Épica (6 Dígitos)</span>
           </button>
         </div>
       )}

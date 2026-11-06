@@ -196,8 +196,8 @@ export default function GameCanvas({
       // Mission 1: Closest Pair of Points
       drawClosestPairVisuals(ctx, width, height, state, currentStep);
     } else if (missionId === 2) {
-      // Mission 2: Skyline Problem
-      drawSkylineVisuals(ctx, width, height, state, currentStep);
+      // Mission 2: Cavaleiro - Karatsuba Multiplication
+      drawKaratsubaVisuals(ctx, width, height, state, currentStep);
     } else if (missionId === 3) {
       // Mission 3: Inversion Counting
       drawInversionVisuals(ctx, width, height, state, currentStep);
@@ -291,68 +291,96 @@ export default function GameCanvas({
     }
   };
 
-  const drawSkylineVisuals = (ctx, width, height, state, currentStep) => {
-    // Skyline ground
-    const groundY = height - 50;
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(0, groundY, width, 50);
+  const drawKaratsubaVisuals = (ctx, width, height, state, currentStep) => {
+    const x = state?.karatsubaX ?? 1234;
+    const y = state?.karatsubaY ?? 5678;
+    const product = state?.karatsubaProduct;
+    const isCompleted = !!product;
 
-    const buildings = state?.buildings || [];
-    const skylinePoints = state?.skyline || [];
+    // Header
+    ctx.save();
+    ctx.fillStyle = '#f9ca24';
+    ctx.font = '9px "Press Start 2P"';
+    ctx.fillText('⚔️ CANHÃO DE CERCO KARATSUBA // DANO DE MULTIPLICAÇÃO', 35, 35);
 
-    // Draw individual buildings semi-transparent
-    buildings.forEach((b, i) => {
-      const colors = ['rgba(52, 73, 94, 0.4)', 'rgba(41, 128, 185, 0.4)', 'rgba(142, 68, 173, 0.4)'];
-      ctx.fillStyle = colors[i % colors.length];
-      ctx.fillRect(b.left, groundY - b.height, b.right - b.left, b.height);
-      ctx.strokeStyle = '#7f8c8d';
-      ctx.strokeRect(b.left, groundY - b.height, b.right - b.left, b.height);
-    });
+    if (currentStep?.message) {
+      ctx.fillStyle = '#00d2d3';
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillText(`FASE D&C: ${currentStep.type}`, 35, 55);
+    }
 
-    // Draw final Skyline silhouette outline
-    if (skylinePoints.length > 0) {
-      ctx.save();
-      ctx.strokeStyle = '#00d2d3';
-      ctx.lineWidth = 4;
-      ctx.shadowColor = '#00d2d3';
-      ctx.shadowBlur = 8;
+    // Target Fortress Gate
+    ctx.font = '45px monospace';
+    ctx.fillText('🏰', width - 110, 150);
+    ctx.fillStyle = '#e94560';
+    ctx.font = '9px "Press Start 2P"';
+    ctx.fillText('MURALHA DO BOSS', width - 145, 180);
+
+    // Multiplicands Box
+    const boxX = 35;
+    const boxY = 80;
+    ctx.fillStyle = '#14142b';
+    ctx.strokeStyle = '#f9ca24';
+    ctx.lineWidth = 2;
+    ctx.fillRect(boxX, boxY, 260, 60);
+    ctx.strokeRect(boxX, boxY, 260, 60);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '14px "Press Start 2P"';
+    ctx.fillText(`X = ${x}`, boxX + 15, boxY + 26);
+    ctx.fillText(`Y = ${y}`, boxX + 15, boxY + 48);
+
+    // D&C 3-Term Formula Box
+    const fX = 35;
+    const fY = 160;
+    ctx.fillStyle = '#0b0b1a';
+    ctx.strokeStyle = '#39395f';
+    ctx.lineWidth = 2;
+    ctx.fillRect(fX, fY, 380, 105);
+    ctx.strokeRect(fX, fY, 380, 105);
+
+    ctx.fillStyle = '#00d2d3';
+    ctx.font = '8px "Press Start 2P"';
+    ctx.fillText('REDUÇÃO DE GAUSS: 4 MULTIPLICAÇÕES -> 3', fX + 12, fY + 22);
+
+    ctx.fillStyle = '#f5f6fa';
+    ctx.font = '11px "VT323"';
+    ctx.fillText(`Fatias: X = 10^m(A) + B  |  Y = 10^m(C) + D`, fX + 12, fY + 42);
+
+    // Step calculations
+    const dData = currentStep?.data;
+    if (dData?.z0 !== undefined || dData?.highX !== undefined) {
+      ctx.fillStyle = '#2ed573';
+      ctx.fillText(`z0 (BD) = ${dData.z0 ?? 'calculando...'} | z2 (AC) = ${dData.z2 ?? 'calculando...'}`, fX + 12, fY + 65);
+      ctx.fillText(`z1 = (A+B)(C+D) - z2 - z0 = ${dData.z1 ?? 'calculando...'}`, fX + 12, fY + 85);
+    } else {
+      ctx.fillStyle = '#a4b0be';
+      ctx.fillText('1. z0 = B × D (Recursivo 1)', fX + 12, fY + 62);
+      ctx.fillText('2. z2 = A × C (Recursivo 2)', fX + 12, fY + 78);
+      ctx.fillText('3. z1 = (A+B)×(C+D) - z2 - z0 (Recursivo 3)', fX + 12, fY + 94);
+    }
+
+    // Impact Laser Cannon Blast when Completed
+    if (isCompleted) {
+      ctx.strokeStyle = '#f9ca24';
+      ctx.lineWidth = 6;
+      ctx.setLineDash([8, 4]);
       ctx.beginPath();
-
-      let currX = skylinePoints[0].x;
-      let currH = skylinePoints[0].h;
-      ctx.moveTo(currX, groundY);
-      ctx.lineTo(currX, groundY - currH);
-
-      for (let i = 1; i < skylinePoints.length; i++) {
-        const nextX = skylinePoints[i].x;
-        const nextH = skylinePoints[i].h;
-        ctx.lineTo(nextX, groundY - currH);
-        ctx.lineTo(nextX, groundY - nextH);
-        currH = nextH;
-      }
-
+      ctx.moveTo(300, 120);
+      ctx.lineTo(width - 110, 130);
       ctx.stroke();
 
-      // Golden Goal / Chest at the end of skyline
-      const lastPoint = skylinePoints[skylinePoints.length - 1];
-      const chestX = (lastPoint?.x || width - 80) + 10;
-      const isCollected = state?.chestCollected;
+      // Explosion spark
+      ctx.fillStyle = '#ff4757';
+      ctx.font = '12px "Press Start 2P"';
+      ctx.fillText(`💥 DANO KARATSUBA: ${product}!`, 180, 300);
 
-      ctx.fillStyle = '#f9ca24';
-      ctx.font = '22px monospace';
-      ctx.fillText(isCollected ? '🎁✨' : '🏆', chestX, groundY - 12);
-
-      if (isCollected) {
-        ctx.fillStyle = '#2ed573';
-        ctx.font = '8px "Press Start 2P"';
-        ctx.fillText('+1000 TESOURO!', chestX - 40, groundY - 35);
-      } else {
-        ctx.fillStyle = '#f9ca24';
-        ctx.font = '7px "Press Start 2P"';
-        ctx.fillText('CAMINHE ATE AQUI', chestX - 50, groundY - 35);
-      }
-      ctx.restore();
+      ctx.fillStyle = '#2ed573';
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillText('ESCUDO DA MURALHA DESTRUÍDO!', 210, 320);
     }
+
+    ctx.restore();
   };
 
   const drawInversionVisuals = (ctx, width, height, state, currentStep) => {

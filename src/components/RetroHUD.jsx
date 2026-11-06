@@ -16,7 +16,7 @@ export default function RetroHUD({
 }) {
   const missions = [
     { id: 1, name: 'Mago Arcana', sub: 'Closest Pair O(n log n)', icon: '🧙‍♂️' },
-    { id: 2, name: 'Cavaleiro', sub: 'Skyline Wall O(n log n)', icon: '⚔️' },
+    { id: 2, name: 'Cavaleiro', sub: 'Karatsuba O(n^1.585)', icon: '⚔️' },
     { id: 3, name: 'Bárbaro', sub: 'Inversões O(n log n)', icon: '🪓' },
     { id: 4, name: 'Assassino', sub: 'QuickSelect O(n)', icon: '🗡️' },
   ];
