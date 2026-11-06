@@ -15,10 +15,10 @@ export default function RetroHUD({
   onOpenDoc,
 }) {
   const missions = [
-    { id: 1, name: '1. Par Mais Próximo', sub: 'O(n log n)', icon: '🎯' },
-    { id: 2, name: '2. Ponte Skyline', sub: 'O(n log n)', icon: '🏰' },
-    { id: 3, name: '3. Altar do Caos', sub: 'O(n log n)', icon: '✨' },
-    { id: 4, name: '4. Sniper QuickSelect', sub: 'O(n)', icon: '🏹' },
+    { id: 1, name: 'Mago Arcana', sub: 'Closest Pair O(n log n)', icon: '🧙‍♂️' },
+    { id: 2, name: 'Cavaleiro', sub: 'Skyline Wall O(n log n)', icon: '⚔️' },
+    { id: 3, name: 'Bárbaro', sub: 'Inversões O(n log n)', icon: '🪓' },
+    { id: 4, name: 'Assassino', sub: 'QuickSelect O(n)', icon: '🗡️' },
   ];
 
   return (

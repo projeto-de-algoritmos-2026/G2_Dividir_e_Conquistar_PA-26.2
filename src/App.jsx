@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import RetroHUD from './components/RetroHUD';
 import GameCanvas from './components/GameCanvas';
-import AlgorithmTerminal from './components/AlgorithmTerminal';
+import TacticalDashboard from './components/TacticalDashboard';
 import MissionActionBar from './components/MissionActionBar';
 import TheoryModal from './components/TheoryModal';
 import { sound } from './audio/soundEffects';
@@ -357,10 +357,16 @@ export default function App() {
           />
         </section>
 
-        {/* Right / Bottom: CRT Terminal with D&C Recursion Steps */}
+        {/* Right / Bottom: Tactical RPG Dashboard with Hero & Attack Selection */}
         <section className="lg:col-span-5 h-full">
-          <AlgorithmTerminal
-            activeMission={activeMission}
+          <TacticalDashboard
+            activeHeroId={activeMission}
+            onSelectHero={(id) => {
+              handleReset();
+              setActiveMission(id);
+            }}
+            onTriggerAlgorithm={handleTriggerAlgorithm}
+            isExecuting={isExecuting}
             executionSteps={executionSteps}
             currentStepIndex={currentStepIndex}
             isPlaying={isPlaying}
@@ -369,7 +375,6 @@ export default function App() {
             onReset={handleReset}
             speed={speed}
             onSpeedChange={setSpeed}
-            algorithmInfo={getAlgorithmInfo()}
           />
         </section>
 
