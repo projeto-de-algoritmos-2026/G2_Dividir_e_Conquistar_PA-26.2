@@ -4,7 +4,9 @@ import GameCanvas from './components/GameCanvas';
 import AlgorithmTerminal from './components/AlgorithmTerminal';
 import TheoryModal from './components/TheoryModal';
 import { sound } from './audio/soundEffects';
+import confetti from 'canvas-confetti';
 import { solveClosestPairDC } from './algorithms/closestPair';
+import { solveSkylineDC } from './algorithms/skyline';
 
 export default function App() {
   const [activeMission, setActiveMission] = useState(1);
@@ -116,8 +118,15 @@ export default function App() {
       setCurrentStepIndex(0);
       setIsPlaying(true);
       setIsExecuting(true);
+    } else if (activeMission === 2) {
+      sound.playPowerup();
+      const result = solveSkylineDC(missionState.buildings);
+      setExecutionSteps(result.steps);
+      setCurrentStepIndex(0);
+      setIsPlaying(true);
+      setIsExecuting(true);
     }
-  }, [activeMission, missionState.points]);
+  }, [activeMission, missionState.points, missionState.buildings]);
 
   // Handle auto-step playback timer
   useEffect(() => {
@@ -130,10 +139,13 @@ export default function App() {
             const step = executionSteps[next];
             if (step?.type === 'DIVIDE') {
               sound.playLaser();
-            } else if (step?.type === 'STRIP_FOUND_BETTER' || step?.type === 'BASE_CASE') {
+            } else if (step?.type === 'STRIP_FOUND_BETTER' || step?.type === 'BASE_CASE' || step?.type === 'MERGE_SKYLINES') {
               sound.playPowerup();
             } else if (step?.type === 'COMPLETED') {
               sound.playVictory();
+              try {
+                confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+              } catch {}
               // Update state with results
               if (activeMission === 1 && step.data) {
                 setMissionState((prev) => ({
@@ -142,6 +154,12 @@ export default function App() {
                   minDist: step.data.finalDist,
                 }));
                 setScore((s) => s + 500);
+              } else if (activeMission === 2 && step.data) {
+                setMissionState((prev) => ({
+                  ...prev,
+                  skyline: step.data.finalSkyline,
+                }));
+                setScore((s) => s + 600);
               }
             }
             return next;
@@ -161,14 +179,25 @@ export default function App() {
       setCurrentStepIndex((prev) => {
         const next = prev + 1;
         const step = executionSteps[next];
-        if (step?.type === 'COMPLETED' && activeMission === 1 && step.data) {
+        if (step?.type === 'COMPLETED') {
           sound.playVictory();
-          setMissionState((s) => ({
-            ...s,
-            bestPair: step.data.finalPair,
-            minDist: step.data.finalDist,
-          }));
-          setScore((sc) => sc + 500);
+          try {
+            confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+          } catch {}
+          if (activeMission === 1 && step.data) {
+            setMissionState((s) => ({
+              ...s,
+              bestPair: step.data.finalPair,
+              minDist: step.data.finalDist,
+            }));
+            setScore((sc) => sc + 500);
+          } else if (activeMission === 2 && step.data) {
+            setMissionState((s) => ({
+              ...s,
+              skyline: step.data.finalSkyline,
+            }));
+            setScore((sc) => sc + 600);
+          }
         }
         return next;
       });
@@ -186,6 +215,11 @@ export default function App() {
         ...prev,
         bestPair: null,
         minDist: null,
+      }));
+    } else if (activeMission === 2) {
+      setMissionState((prev) => ({
+        ...prev,
+        skyline: [],
       }));
     }
   };
