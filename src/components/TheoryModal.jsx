@@ -159,7 +159,7 @@ export default function TheoryModal({ isOpen, onClose, initialTab = 'overview' }
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b-2 border-[#39395f] bg-[#0d0d1a] overflow-x-auto text-xs">
+        <div className="flex flex-wrap border-b-2 border-[#39395f] bg-[#0d0d1a] text-xs">
           {[
             { id: 'simulator', label: '📈 Simulador Assintótico' },
             { id: 'overview', label: 'Paradigma D&C' },
@@ -174,7 +174,7 @@ export default function TheoryModal({ isOpen, onClose, initialTab = 'overview' }
                 sound.playClick();
                 setActiveTab(tab.id);
               }}
-              className={`px-3.5 py-2.5 font-pixel text-[8px] uppercase whitespace-nowrap transition-colors ${
+              className={`px-3 py-2.5 font-pixel text-[8px] uppercase whitespace-nowrap transition-colors ${
                 activeTab === tab.id
                   ? 'bg-[#1a1a36] text-[#00d2d3] border-b-2 border-[#00d2d3]'
                   : 'text-gray-400 hover:text-white'
@@ -480,60 +480,115 @@ export default function TheoryModal({ isOpen, onClose, initialTab = 'overview' }
           )}
 
           {activeTab === 'closest' && (
-            <div>
-              <h3 className="font-pixel text-xs text-[#00d2d3] mb-2">Par de Pontos Mais Próximos (Closest Pair)</h3>
+            <div className="space-y-3">
+              <h3 className="font-pixel text-xs text-[#00d2d3] mb-2">
+                🧙‍♂️ Mago Arcana — Par de Pontos Mais Próximos (Closest Pair)
+              </h3>
               <p>
-                <strong>Problema:</strong> Dados $n$ pontos no plano 2D, encontrar os dois pontos com a menor distância euclidiana.
+                <strong>Problema:</strong> Dados <code className="text-[#00d2d3]">n</code> pontos no plano 2D, encontrar os dois pontos com a menor distância euclidiana.
               </p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 my-2">
-                <li><strong>Força Bruta:</strong> Compara todos os pares possíveis $\binom{n}{2} = O(n^2)$. Para milhares de alvos, torna o jogo inviável.</li>
-                <li><strong>Dividir e Conquistar:</strong> Ordena os pontos por X, traça uma linha vertical divisória, encontra a menor distância $\delta = \min(\delta_L, \delta_R)$, e verifica apenas os pontos que caem na faixa de largura $2\delta$ ao redor do meio ordenados por Y.</li>
-                <li><strong>Garantia Geométrica:</strong> Na faixa central, cada ponto precisa ser comparado com no máximo <strong>7 vizinhos</strong>!</li>
-                <li><strong>Complexidade:</strong> <span className="text-[#2ed573] font-bold">O(n log n)</span>.</li>
+              <ul className="list-disc list-inside space-y-2 text-base text-gray-300 my-2">
+                <li>
+                  <strong>Força Bruta:</strong> Compara todos os pares possíveis{' '}
+                  <code className="text-[#ff4757]">n(n - 1) / 2 = O(n²)</code>. Para milhares de alvos na arena, o custo cresce quadraticamente e trava o jogo.
+                </li>
+                <li>
+                  <strong>Dividir:</strong> Ordena os pontos por coordenada <code className="text-[#00d2d3]">X</code> e traça uma linha vertical divisória no ponto médio <code className="text-[#00d2d3]">X_mid</code>, separando em metade esquerda e direita.
+                </li>
+                <li>
+                  <strong>Conquistar:</strong> Resolve recursivamente os dois lados para encontrar a menor distância{' '}
+                  <code className="text-[#f9ca24]">δ = min(δ_Esq, δ_Dir)</code>.
+                </li>
+                <li>
+                  <strong>Combinar (Garantia Geométrica):</strong> Filtra apenas os pontos na faixa central de largura{' '}
+                  <code className="text-[#2ed573]">2δ</code> ao redor de <code className="text-[#00d2d3]">X_mid</code> ordenados por <code className="text-[#00d2d3]">Y</code>. Cada ponto precisa ser comparado com no máximo <strong>7 vizinhos</strong> subsequentes!
+                </li>
+                <li>
+                  <strong>Recorrência e Complexidade:</strong>{' '}
+                  <code className="text-[#2ed573] font-bold">T(n) = 2T(n/2) + O(n) ⇒ O(n log n)</code>.
+                </li>
               </ul>
             </div>
           )}
 
           {activeTab === 'karatsuba' && (
-            <div>
-              <h3 className="font-pixel text-xs text-[#00d2d3] mb-2">Multiplicação Rápida de Karatsuba</h3>
+            <div className="space-y-3">
+              <h3 className="font-pixel text-xs text-[#f9ca24] mb-2">
+                ⚔️ Cavaleiro Real — Multiplicação Rápida de Karatsuba
+              </h3>
               <p>
-                <strong>Problema:</strong> Multiplicar dois números inteiros com $n$ dígitos. O método escolar tradicional realiza 4 multiplicações parciais por divisão, resultando em complexidade quadrática $O(n^2)$.
+                <strong>Problema:</strong> Multiplicar dois números inteiros grandes com <code className="text-[#f9ca24]">n</code> dígitos. O método escolar tradicional realiza <code className="text-[#ff4757]">n²</code> multiplicações elementares (<code className="text-[#ff4757]">O(n²)</code>).
               </p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 my-2">
-                <li><strong>Dividir:</strong> Fatie os números $X$ e $Y$ em duas metades: $X = 10^m A + B$ e $Y = 10^m C + D$, onde $m = \lfloor n/2 \rfloor$.</li>
-                <li><strong>Truque Algébrico de Gauss:</strong> O produto original seria 10^(2m) AC + 10^m(AD + BC) + BD (4 multiplicações). Karatsuba notou que o termo central pode ser reescrito com apenas 1 produto extra: (A+B)(C+D) - AC - BD!</li>
-                <li><strong>Conquistar:</strong> Calcula recursivamente apenas 3 multiplicações: $z_0 = BD$, $z_2 = AC$, e $z_1 = (A+B)(C+D) - z_2 - z_0$.</li>
-                <li><strong>Recorrência:</strong> T(n) = 3T(n/2) + O(n). Pelo Teorema Mestre, caso 1: O(n^log2(3)) ≈ O(n^1.585).</li>
+              <ul className="list-disc list-inside space-y-2 text-base text-gray-300 my-2">
+                <li>
+                  <strong>Dividir:</strong> Fatia os números <code className="text-[#00d2d3]">X</code> e <code className="text-[#00d2d3]">Y</code> em duas metades de tamanho <code className="text-[#00d2d3]">m = ⌊n/2⌋</code>:{' '}
+                  <code className="text-[#f9ca24]">X = 10^m · A + B</code> e <code className="text-[#f9ca24]">Y = 10^m · C + D</code>.
+                </li>
+                <li>
+                  <strong>Truque Algébrico de Gauss:</strong> O produto <code className="text-[#00d2d3]">X × Y = 10^(2m)·AC + 10^m·(AD + BC) + BD</code> exigiria 4 multiplicações recursivas. Karatsuba calcula o termo central com apenas 1 multiplicação extra:{' '}
+                  <code className="text-[#2ed573]">(A + B)(C + D) - AC - BD = AD + BC</code>!
+                </li>
+                <li>
+                  <strong>Conquistar:</strong> Executa apenas <strong>3 chamadas recursivas</strong>:{' '}
+                  <code className="text-[#2ed573]">z0 = B × D</code>, <code className="text-[#00d2d3]">z2 = A × C</code> e{' '}
+                  <code className="text-[#f9ca24]">z1 = (A + B)(C + D) - z2 - z0</code>.
+                </li>
+                <li>
+                  <strong>Recorrência e Complexidade:</strong>{' '}
+                  <code className="text-[#2ed573] font-bold">T(n) = 3T(n/2) + O(n) ⇒ O(n^(log₂ 3)) ≈ O(n^1.585)</code>.
+                </li>
               </ul>
             </div>
           )}
 
           {activeTab === 'inversion' && (
-            <div>
-              <h3 className="font-pixel text-xs text-[#00d2d3] mb-2">Contagem de Inversões (Inversion Count)</h3>
+            <div className="space-y-3">
+              <h3 className="font-pixel text-xs text-[#ff4757] mb-2">
+                🪓 Bárbaro Feroz — Contagem de Inversões (Inversion Count)
+              </h3>
               <p>
-                <strong>Problema:</strong> Medir quão fora de ordem um array está. Um par $(i, j)$ é uma inversão se $i &lt; j$ e $A[i] &gt; A[j]$.
+                <strong>Problema:</strong> Medir o nível de desordem (entropia) de um vetor. Um par de índices <code className="text-[#00d2d3]">(i, j)</code> é uma inversão se <code className="text-[#f9ca24]">i &lt; j</code> e <code className="text-[#ff4757]">A[i] &gt; A[j]</code>.
               </p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 my-2">
-                <li>Utilizado em sistemas de recomendação de afinidade, algoritmos de ranking e motores de detecção de caos.</li>
-                <li>Modifica o algoritmo de <strong>Merge Sort</strong>: ao fazer o merge das duas metades já ordenadas, se o elemento da metade direita for menor que o da metade esquerda, todos os elementos restantes na esquerda formam inversões com ele!</li>
-                <li><strong>Complexidade:</strong> <span className="text-[#2ed573] font-bold">O(n log n)</span> (vs $O(n^2)$ de força bruta).</li>
+              <ul className="list-disc list-inside space-y-2 text-base text-gray-300 my-2">
+                <li>
+                  <strong>Dividir:</strong> Divide o array de runas ao meio em subvetor esquerdo e subvetor direito.
+                </li>
+                <li>
+                  <strong>Conquistar:</strong> Conta recursivamente as inversões internas da metade esquerda e da metade direita usando Merge Sort.
+                </li>
+                <li>
+                  <strong>Combinar (Contagem em Salto):</strong> Ao intercalar as duas metades já ordenadas, se <code className="text-[#ff4757]">Direita[j] &lt; Esquerda[i]</code>, então <code className="text-[#ff4757]">Direita[j]</code> é menor que <strong>todos os elementos restantes</strong> de <code className="text-[#00d2d3]">Esquerda[i..fim]</code>, somando <code className="text-[#2ed573]">(tam_Esq - i)</code> inversões de uma só vez!
+                </li>
+                <li>
+                  <strong>Recorrência e Complexidade:</strong>{' '}
+                  <code className="text-[#2ed573] font-bold">T(n) = 2T(n/2) + O(n) ⇒ O(n log n)</code> (contra <code className="text-[#ff4757]">O(n²)</code> da força bruta).
+                </li>
               </ul>
             </div>
           )}
 
           {activeTab === 'median' && (
-            <div>
-              <h3 className="font-pixel text-xs text-[#00d2d3] mb-2">Mediana das Medianas (Algoritmo BFPRT)</h3>
+            <div className="space-y-3">
+              <h3 className="font-pixel text-xs text-[#2ed573] mb-2">
+                🗡️ Assassino Sombrio — Mediana das Medianas (Algoritmo BFPRT)
+              </h3>
               <p>
-                <strong>Problema:</strong> Encontrar o $k$-ésimo menor elemento de um array em tempo linear estrito mesmo no <strong>pior caso</strong>.
+                <strong>Problema:</strong> Encontrar o <code className="text-[#f9ca24]">k</code>-ésimo menor elemento de um vetor desordenado em <strong>tempo linear estrito no pior caso</strong>.
               </p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 my-2">
-                <li>O QuickSelect comum tem caso médio $O(n)$, mas no pior caso (pivôs ruins) degrada para $O(n^2)$.</li>
-                <li><strong>Dividir:</strong> Divide o array em blocos de 5 elementos. Ordena cada bloco (em tempo constante $O(1)$) e extrai sua mediana local.</li>
-                <li><strong>Conquistar:</strong> Encontra recursivamente a <em>Mediana das Medianas</em> $M$. Esse elemento é garantidamente maior que pelo menos $30\%$ dos elementos e menor que pelo menos $30\%$, eliminando a possibilidade de partições degeneradas!</li>
-                <li><strong>Recorrência:</strong> $T(n) \le T(n/5) + T(7n/10) + O(n)$. Como $1/5 + 7/10 = 9/10 &lt; 1$, a soma das séries geométricas converge para $\mathbf{O(n)}$ no pior caso!</li>
+              <ul className="list-disc list-inside space-y-2 text-base text-gray-300 my-2">
+                <li>
+                  <strong>Por que não usar QuickSelect comum?</strong> O QuickSelect padrão tem caso médio <code className="text-[#00d2d3]">O(n)</code>, mas se escolher pivôs ruins (ex: vetor ordenado ou reverso) degrada para <code className="text-[#ff4757]">O(n²)</code>.
+                </li>
+                <li>
+                  <strong>Dividir em Blocos de 5:</strong> Divide a tropa de monstros em grupos de 5 elementos, ordena cada grupo em tempo constante <code className="text-[#00d2d3]">O(1)</code> e extrai a mediana de cada bloco.
+                </li>
+                <li>
+                  <strong>Conquistar (Pivô Determinístico):</strong> Chama recursivamente o algoritmo para achar a <em>Mediana das Medianas</em> <code className="text-[#f9ca24]">M</code>. Esse pivô garante matematicamente descartar pelo menos <strong>30% dos elementos</strong> a cada passo!
+                </li>
+                <li>
+                  <strong>Recorrência e Complexidade:</strong>{' '}
+                  <code className="text-[#2ed573] font-bold">T(n) ≤ T(n/5) + T(7n/10) + O(n) ⇒ O(n) no pior caso</code> (pois <code className="text-[#00d2d3]">1/5 + 7/10 = 9/10 &lt; 1</code>).
+                </li>
               </ul>
             </div>
           )}
