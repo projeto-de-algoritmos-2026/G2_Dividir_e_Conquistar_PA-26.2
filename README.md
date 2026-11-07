@@ -20,9 +20,9 @@
 **Pixel Conquer** é um RPG tático e laboratório de algoritmos interativo em **Pixel Art 2D retrô (16-bit)** desenvolvido com **React, JavaScript e Vite**. O usuário comanda um esquadrão composto por **4 classes de heróis clássicos de RPG** dentro de uma arena de batalha:
 
 * 🧙‍♂️ **Mago Arcana** (Fase 1: Par de Pontos Mais Próximos - $O(n \log n)$)
-* ⚔️ **Cavaleiro Real** (Fase 2: Problema do Skyline / Pontes e Muralhas - $O(n \log n)$)
+* ⚔️ **Cavaleiro Real** (Fase 2: Multiplicação Rápida de Karatsuba - $O(n^{\log_2 3}) \approx O(n^{1.585})$)
 * 🪓 **Bárbaro Feroz** (Fase 3: Contagem de Inversões / Altar do Caos - $O(n \log n)$)
-* 🗡️ **Assassino das Sombras** (Fase 4: QuickSelect / Eliminação de Alvos - $O(n)$ médio)
+* 🗡️ **Assassino das Sombras** (Fase 4: Mediana das Medianas / BFPRT - $O(n)$ pior caso)
 
 A janela esquerda é a **Arena de Combate** onde todo o time se posiciona em formação tática e o herói selecionado é controlado em tempo real (`W, A, S, D` ou setas). A janela direita é o **Dashboard Tático de Comando**, onde o usuário escolhe qual membro do time vai agir, seleciona habilidades de Dividir e Conquistar vs Força Bruta ($O(n^2)$), e controla passo a passo o visualizador de recursão.
 
@@ -41,14 +41,17 @@ A janela esquerda é a **Arena de Combate** onde todo o time se posiciona em for
 
 ---
 
-### 2. A Ponte do Horizonte: Problema do Skyline (Skyline Problem)
-* **Temática no Jogo:** O herói precisa cruzar um precipício intransponível repleto de pilares e torres em ruínas. A habilidade de alvenaria recursiva une os prédios e ergue uma ponte contínua que permite ao herói caminhar até o baú de tesouro 🏆.
+### 2. Canhão de Cerco: Multiplicação de Karatsuba (Karatsuba Fast Multiplication)
+* **Temática no Jogo:** Para quebrar o escudo de titânio da fortaleza do Boss, o Cavaleiro precisa multiplicar valores colossais de mana e dano de cerco. A multiplicação tradicional escolar realiza $n^2$ multiplicações elementares. Karatsuba utiliza Dividir e Conquistar para quebrar os números em metades e calcular o produto final com apenas 3 multiplicações recursivas.
 * **Paradigma D&C:**
-  * **Dividir:** Divide a lista de edifícios retangulares no formato $[L_i, H_i, R_i]$ em duas metades balanceadas.
-  * **Conquistar:** Calcula recursivamente a silhueta da metade esquerda e da metade direita.
-  * **Combinar (Merge):** Percorre as duas silhuetas simultaneamente mantendo a altura corrente de cada lado ($h_1$ e $h_2$). A altura visível resultante em cada coordenada é $\max(h_1, h_2)$, descartando sobreposições redundantes.
-* **Complexidade:** $O(n \log n)$.
-* **Recorrência:** $T(n) = 2T(n/2) + O(n) \Rightarrow O(n \log n)$.
+  * **Dividir:** Divide os números $X$ e $Y$ em metades: $X = 10^m A + B$ e $Y = 10^m C + D$, com $m = \lfloor n/2 \rfloor$.
+  * **Conquistar:** Em vez de 4 multiplicações ($AC, AD, BC, BD$), calcula recursivamente apenas 3:
+    1. $z_0 = B \times D$
+    2. $z_2 = A \times C$
+    3. $z_1 = (A + B) \times (C + D) - z_2 - z_0$ (Identidade de Gauss)
+  * **Combinar:** Une os termos com deslocamento de base: $Resultado = z_2 \times 10^{2m} + z_1 \times 10^m + z_0$.
+* **Complexidade:** $O(n^{\log_2 3}) \approx O(n^{1.585})$ contra $O(n^2)$ da multiplicação tradicional.
+* **Recorrência:** $T(n) = 3T(n/2) + O(n) \Rightarrow O(n^{1.585})$.
 
 ---
 
@@ -63,15 +66,14 @@ A janela esquerda é a **Arena de Combate** onde todo o time se posiciona em for
 
 ---
 
-### 4. Sniper da Mediana: QuickSelect (Seleção Linear de Ordem)
-* **Temática no Jogo:** Uma tropa de monstros guarda os portões. O oráculo adverte que apenas o $k$-ésimo monstro mais forte carrega a chave do portal. O herói mira com seu arco e utiliza QuickSelect para descartar metades inteiras do exército sem precisar ordenar a tropa inteira!
-* **Paradigma D&C com Poda (Prune and Search):**
-  * **Dividir:** Escolhe um monstro pivô e particiona a tropa em monstros com poder menor/igual à esquerda e maiores à direita. O pivô assume sua posição definitiva $p$.
-  * **Conquistar / Poda:**
-    * Se $p = k - 1$, o alvo exato foi encontrado!
-    * Se $k - 1 < p$, descarta todos os monstros à direita e recorre apenas no subarray esquerdo.
-    * Se $k - 1 > p$, descarta todos os monstros à esquerda e recorre apenas no subarray direito.
-* **Complexidade:** $O(n)$ no caso médio!
+### 4. Sniper da Mediana: Mediana das Medianas (Algoritmo BFPRT)
+* **Temática no Jogo:** Uma tropa de monstros guarda os portões. O Assassino precisa isolar cirurgicamente o $k$-ésimo alvo de elite. Para evitar os piores casos degenerados do QuickSelect ($O(n^2)$ com pivôs ruins), o Assassino aplica a Mediana das Medianas, garantindo tempo de execução linear estrito $O(n)$ mesmo no pior caso absoluto!
+* **Paradigma D&C:**
+  * **Dividir:** Divide o exército de monstros em blocos de 5 elementos. Ordena cada bloco em tempo constante $O(1)$ e extrai suas medianas locais.
+  * **Conquistar:** Encontra recursivamente a *Mediana das Medianas* $M$. Este pivô garante que pelo menos $30\%$ dos elementos são estritamente menores e $30\%$ maiores.
+  * **Partição e Poda:** Particiona o array ao redor de $M$ e descarta a metade irrelevante onde $k$ não se encontra.
+* **Complexidade:** $O(n)$ estrito no pior caso!
+* **Recorrência:** $T(n) \le T(n/5) + T(7n/10) + O(n) \Rightarrow O(n)$.
 
 ---
 

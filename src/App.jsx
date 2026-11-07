@@ -6,10 +6,10 @@ import MissionActionBar from './components/MissionActionBar';
 import TheoryModal from './components/TheoryModal';
 import { sound } from './audio/soundEffects';
 import confetti from 'canvas-confetti';
-import { solveClosestPairDC } from './algorithms/closestPair';
+import { solveClosestPairDC, solveClosestPairBruteForce } from './algorithms/closestPair';
 import { solveKaratsubaDC } from './algorithms/karatsuba';
-import { solveInversionsDC } from './algorithms/inversionCount';
-import { solveQuickSelectDC } from './algorithms/quickSelect';
+import { solveInversionsDC, solveInversionsBruteForce } from './algorithms/inversionCount';
+import { solveMedianOfMediansDC } from './algorithms/medianOfMedians';
 
 export default function App() {
   const [activeMission, setActiveMission] = useState(1);
@@ -133,13 +133,35 @@ export default function App() {
       setIsExecuting(true);
     } else if (activeMission === 4) {
       sound.playLaser();
-      const result = solveQuickSelectDC(missionState.monsters, missionState.targetK);
+      const result = solveMedianOfMediansDC(missionState.monsters, missionState.targetK);
       setExecutionSteps(result.steps);
       setCurrentStepIndex(0);
       setIsPlaying(true);
       setIsExecuting(true);
     }
-  }, [activeMission, missionState.points, missionState.buildings, missionState.array, missionState.monsters, missionState.targetK]);
+  }, [activeMission, missionState.points, missionState.karatsubaX, missionState.karatsubaY, missionState.array, missionState.monsters, missionState.targetK]);
+
+  // Trigger Brute Force comparison
+  const handleTriggerBruteForce = useCallback(() => {
+    if (activeMission === 1) {
+      sound.playExplosion();
+      const result = solveClosestPairBruteForce(missionState.points);
+      setExecutionSteps(result.steps);
+      setCurrentStepIndex(0);
+      setIsPlaying(true);
+      setIsExecuting(true);
+    } else if (activeMission === 3) {
+      sound.playExplosion();
+      const result = solveInversionsBruteForce(missionState.array);
+      setExecutionSteps(result.steps);
+      setCurrentStepIndex(0);
+      setIsPlaying(true);
+      setIsExecuting(true);
+    } else {
+      // Default notification
+      handleTriggerAlgorithm();
+    }
+  }, [activeMission, missionState.points, missionState.array, handleTriggerAlgorithm]);
 
   // Handle auto-step playback timer
   useEffect(() => {
@@ -360,6 +382,7 @@ export default function App() {
               setActiveMission(id);
             }}
             onTriggerAlgorithm={handleTriggerAlgorithm}
+            onTriggerBruteForce={handleTriggerBruteForce}
             isExecuting={isExecuting}
             executionSteps={executionSteps}
             currentStepIndex={currentStepIndex}

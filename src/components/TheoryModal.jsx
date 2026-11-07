@@ -31,9 +31,9 @@ export default function TheoryModal({ isOpen, onClose }) {
           {[
             { id: 'overview', label: 'Paradigma D&C' },
             { id: 'closest', label: '🧙 Mago (Closest Pair)' },
-            { id: 'skyline', label: '⚔️ Cavaleiro (Skyline)' },
+            { id: 'karatsuba', label: '⚔️ Cavaleiro (Karatsuba)' },
             { id: 'inversion', label: '🪓 Bárbaro (Inversões)' },
-            { id: 'quickselect', label: '🗡️ Assassino (QuickSelect)' },
+            { id: 'median', label: '🗡️ Assassino (Mediana das Medianas)' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -98,17 +98,17 @@ export default function TheoryModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {activeTab === 'skyline' && (
+          {activeTab === 'karatsuba' && (
             <div>
-              <h3 className="font-pixel text-xs text-[#00d2d3] mb-2">Problema do Skyline (Silhueta de Edifícios)</h3>
+              <h3 className="font-pixel text-xs text-[#00d2d3] mb-2">Multiplicação Rápida de Karatsuba</h3>
               <p>
-                <strong>Problema:</strong> Dado um conjunto de edifícios retangulares no formato <code>[Esquerda, Altura, Direita]</code>, traçar o contorno visível do horizonte sem sobreposições redundantes.
+                <strong>Problema:</strong> Multiplicar dois números inteiros com $n$ dígitos. O método escolar tradicional realiza 4 multiplicações parciais por divisão, resultando em complexidade quadrática $O(n^2)$.
               </p>
               <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 my-2">
-                <li><strong>Dividir:</strong> Divide a lista de $n$ prédios em duas metades de $n/2$.</li>
-                <li><strong>Conquistar:</strong> Calcula recursivamente a silhueta da metade esquerda e da metade direita.</li>
-                <li><strong>Combinar (Merge):</strong> Percorre as duas silhuetas mantendo a altura atual de cada uma ($h_1$ e $h_2$). A altura resultante em cada ponto de transição é sempre $\max(h_1, h_2)$.</li>
-                <li><strong>Complexidade:</strong> <span className="text-[#2ed573] font-bold">O(n log n)</span>.</li>
+                <li><strong>Dividir:</strong> Fatie os números $X$ e $Y$ em duas metades: $X = 10^m A + B$ e $Y = 10^m C + D$, onde $m = \lfloor n/2 \rfloor$.</li>
+                <li><strong>Truque Algébrico de Gauss:</strong> O produto original seria 10^(2m) AC + 10^m(AD + BC) + BD (4 multiplicações). Karatsuba notou que o termo central pode ser reescrito com apenas 1 produto extra: (A+B)(C+D) - AC - BD!</li>
+                <li><strong>Conquistar:</strong> Calcula recursivamente apenas 3 multiplicações: $z_0 = BD$, $z_2 = AC$, e $z_1 = (A+B)(C+D) - z_2 - z_0$.</li>
+                <li><strong>Recorrência:</strong> T(n) = 3T(n/2) + O(n). Pelo Teorema Mestre, caso 1: O(n^log2(3)) ≈ O(n^1.585).</li>
               </ul>
             </div>
           )}
@@ -127,16 +127,17 @@ export default function TheoryModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {activeTab === 'quickselect' && (
+          {activeTab === 'median' && (
             <div>
-              <h3 className="font-pixel text-xs text-[#00d2d3] mb-2">QuickSelect (Seleção Linear de Ordem)</h3>
+              <h3 className="font-pixel text-xs text-[#00d2d3] mb-2">Mediana das Medianas (Algoritmo BFPRT)</h3>
               <p>
-                <strong>Problema:</strong> Encontrar o $k$-ésimo menor ou maior elemento em uma lista desordenada (por exemplo, a mediana da tropa de inimigos).
+                <strong>Problema:</strong> Encontrar o $k$-ésimo menor elemento de um array em tempo linear estrito mesmo no <strong>pior caso</strong>.
               </p>
               <ul className="list-disc list-inside space-y-1 text-sm text-gray-300 my-2">
-                <li>Em vez de ordenar todo o array com Quicksort ou Mergesort ($O(n \log n)$), o QuickSelect utiliza Dividir e Conquistar com <strong>poda de galho</strong> (Prune and Search).</li>
-                <li>Após particionar ao redor de um pivô, se a posição do pivô for exatamente $k$, o resultado foi encontrado! Caso contrário, o algoritmo recorre <strong>apenas</strong> na metade onde $k$ se encontra, descartando a outra metade por completo.</li>
-                <li><strong>Complexidade:</strong> <span className="text-[#2ed573] font-bold">O(n) no caso médio</span>!</li>
+                <li>O QuickSelect comum tem caso médio $O(n)$, mas no pior caso (pivôs ruins) degrada para $O(n^2)$.</li>
+                <li><strong>Dividir:</strong> Divide o array em blocos de 5 elementos. Ordena cada bloco (em tempo constante $O(1)$) e extrai sua mediana local.</li>
+                <li><strong>Conquistar:</strong> Encontra recursivamente a <em>Mediana das Medianas</em> $M$. Esse elemento é garantidamente maior que pelo menos $30\%$ dos elementos e menor que pelo menos $30\%$, eliminando a possibilidade de partições degeneradas!</li>
+                <li><strong>Recorrência:</strong> $T(n) \le T(n/5) + T(7n/10) + O(n)$. Como $1/5 + 7/10 = 9/10 &lt; 1$, a soma das séries geométricas converge para $\mathbf{O(n)}$ no pior caso!</li>
               </ul>
             </div>
           )}

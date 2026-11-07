@@ -451,14 +451,32 @@ export default function GameCanvas({
     const spacing = 72;
 
     ctx.save();
-    ctx.fillStyle = '#f9ca24';
+    ctx.fillStyle = '#2ed573';
     ctx.font = '9px "Press Start 2P"';
-    ctx.fillText(`SNIPER QUICKSELECT // META: ${targetK}º MONSTRO MAIS FORTE`, startX, 35);
+    ctx.fillText(`🗡️ MEDIANA DAS MEDIANAS (BFPRT) // META: ${targetK}º ALVO`, startX, 35);
 
     if (currentStep?.message) {
       ctx.fillStyle = '#00d2d3';
       ctx.font = '8px "Press Start 2P"';
-      ctx.fillText(`ETAPA: ${currentStep.type}`, startX, 55);
+      ctx.fillText(`FASE BFPRT: ${currentStep.type}`, startX, 55);
+    }
+    ctx.restore();
+
+    // Draw Groups of 5 dashed boundary boxes
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 210, 211, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+
+    for (let g = 0; g < monsters.length; g += 5) {
+      const gCount = Math.min(5, monsters.length - g);
+      const gx = startX + g * spacing - 14;
+      const gw = gCount * spacing - 8;
+      ctx.strokeRect(gx, 120, gw, 130);
+
+      ctx.fillStyle = 'rgba(0, 210, 211, 0.8)';
+      ctx.font = '7px "Press Start 2P"';
+      ctx.fillText(`GRUPO ${Math.floor(g / 5) + 1} (BLOCO DE 5)`, gx + 6, 112);
     }
     ctx.restore();
 
@@ -468,13 +486,14 @@ export default function GameCanvas({
       const isTarget = targetFound && targetFound.id === m.id;
       const isEliminated = m.eliminated;
       const isPivot = currentStep?.data?.pivot?.id === m.id;
+      const isLocalMedian = currentStep?.data?.medians?.some((med) => med.id === m.id);
 
       ctx.save();
       ctx.globalAlpha = isEliminated ? 0.25 : 1.0;
 
-      // Draw monster platform
+      // Platform
       ctx.fillStyle = isTarget ? '#241c12' : '#141424';
-      ctx.strokeStyle = isPivot ? '#f9ca24' : (isTarget ? '#2ed573' : '#39395f');
+      ctx.strokeStyle = isPivot ? '#f9ca24' : (isLocalMedian ? '#2ed573' : '#39395f');
       ctx.lineWidth = isPivot || isTarget ? 3 : 1.5;
       ctx.fillRect(x - 10, y - 10, 60, 85);
       ctx.strokeRect(x - 10, y - 10, 60, 85);
@@ -497,8 +516,12 @@ export default function GameCanvas({
 
       if (isPivot) {
         ctx.fillStyle = '#f9ca24';
-        ctx.font = '8px "Press Start 2P"';
-        ctx.fillText('PIVÔ', x + 4, y + 72);
+        ctx.font = '7px "Press Start 2P"';
+        ctx.fillText('PIVÔ MoM', x - 4, y + 72);
+      } else if (isLocalMedian) {
+        ctx.fillStyle = '#2ed573';
+        ctx.font = '6px "Press Start 2P"';
+        ctx.fillText('MEDIANA 5', x - 6, y + 72);
       }
 
       if (isEliminated) {
