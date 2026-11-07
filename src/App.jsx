@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import RetroHUD from './components/RetroHUD';
 import GameCanvas from './components/GameCanvas';
 import TacticalDashboard from './components/TacticalDashboard';
@@ -7,9 +7,9 @@ import TheoryModal from './components/TheoryModal';
 import { sound } from './audio/soundEffects';
 import confetti from 'canvas-confetti';
 import { solveClosestPairDC, solveClosestPairBruteForce } from './algorithms/closestPair';
-import { solveKaratsubaDC } from './algorithms/karatsuba';
+import { solveKaratsubaDC, solveKaratsubaBruteForce } from './algorithms/karatsuba';
 import { solveInversionsDC, solveInversionsBruteForce } from './algorithms/inversionCount';
-import { solveMedianOfMediansDC } from './algorithms/medianOfMedians';
+import { solveMedianOfMediansDC, solveMedianBruteForce } from './algorithms/medianOfMedians';
 
 export default function App() {
   const [activeMission, setActiveMission] = useState(1);
@@ -22,12 +22,15 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [isTheoryOpen, setIsTheoryOpen] = useState(false);
 
-  // Execution state for D&C algorithms
+  // Execution state for D&C and Brute Force algorithms
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionSteps, setExecutionSteps] = useState([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(600); // ms per step
+
+  // Benchmark telemetry comparing D&C vs Brute Force O(n^2)
+  const [benchmarkMetrics, setBenchmarkMetrics] = useState(null);
 
   // Mission States
   const [missionState, setMissionState] = useState({
@@ -50,11 +53,11 @@ export default function App() {
     karatsubaY: 5678,
     karatsubaProduct: null,
 
-    // Mission 3: Inversions (prep)
+    // Mission 3: Inversions
     array: [8, 4, 2, 1, 9, 3, 7, 5],
     inversions: 0,
 
-    // Mission 4: QuickSelect (prep)
+    // Mission 4: Median of Medians (BFPRT)
     monsters: [
       { id: 1, power: 12, eliminated: false },
       { id: 2, power: 45, eliminated: false },
@@ -68,100 +71,185 @@ export default function App() {
     targetFound: null,
   });
 
-  // Algorithm info for active mission
-  const getAlgorithmInfo = () => {
-    switch (activeMission) {
-      case 1:
-        return {
-          title: 'PAR DE PONTOS MAIS PRÓXIMOS',
-          complexity: 'O(n log n)',
-          divideDesc: 'Traça linha de fissura e divide pontos por X',
-          conquerDesc: 'Calcula δ_min nas metades esquerda e direita',
-          combineDesc: 'Verifica faixa central de largura 2δ por Y',
-        };
-      case 2:
-        return {
-          title: 'PROBLEMA DO SKYLINE',
-          complexity: 'O(n log n)',
-          divideDesc: 'Divide a lista de edifícios em duas metades',
-          conquerDesc: 'Calcula silhueta esquerda e silhueta direita',
-          combineDesc: 'Merge das duas silhuetas com altura máxima',
-        };
-      case 3:
-        return {
-          title: 'CONTAGEM DE INVERSÕES',
-          complexity: 'O(n log n)',
-          divideDesc: 'Divide o array em duas metades',
-          conquerDesc: 'Conta inversões internas no Merge Sort',
-          combineDesc: 'Soma inversões cruzadas durante o merge',
-        };
-      case 4:
-        return {
-          title: 'SNIPER QUICKSELECT',
-          complexity: 'O(n) médio',
-          divideDesc: 'Particiona monstros com base em um pivô',
-          conquerDesc: 'Descarta a metade sem o k-ésimo alvo',
-          combineDesc: 'Isola o campeão sem ordenar toda a tropa',
-        };
-      default:
-        return {};
-    }
-  };
+  // Restore HP and Mana with Potion
+  const handleRestoreStats = useCallback(() => {
+    setHp(maxHp);
+    setMana(maxMana);
+  }, [maxHp, maxMana]);
 
-  // Trigger algorithm execution
+  // Apply completion effects for final step
+  const applyStepCompletion = useCallback((step) => {
+    if (!step || step.type !== 'COMPLETED') return;
+    sound.playVictory();
+    try {
+      confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
+    } catch {}
+
+    const isBF = !!step.data?.isBruteForce;
+    // Regenerate +10 mana on efficient D&C completion
+    if (!isBF) {
+      setMana((m) => Math.min(maxMana, m + 10));
+    }
+
+    if (activeMission === 1 && step.data) {
+      setMissionState((prev) => ({
+        ...prev,
+        bestPair: step.data.finalPair,
+        minDist: step.data.finalDist,
+      }));
+      setScore((s) => s + (isBF ? 150 : 500));
+    } else if (activeMission === 2 && step.data) {
+      setMissionState((prev) => ({
+        ...prev,
+        karatsubaProduct: step.data.finalProduct,
+      }));
+      setScore((s) => s + (isBF ? 200 : 850));
+    } else if (activeMission === 3 && step.data) {
+      setMissionState((prev) => ({
+        ...prev,
+        array: step.data.finalSorted,
+        inversions: step.data.totalInversions,
+      }));
+      setScore((s) => s + (isBF ? 150 : step.data.totalInversions * 150 + 400));
+    } else if (activeMission === 4 && step.data) {
+      setMissionState((prev) => ({
+        ...prev,
+        monsters: step.data.monsters,
+        targetFound: step.data.finalTarget,
+      }));
+      setScore((s) => s + (isBF ? 200 : 750));
+    }
+  }, [activeMission, maxMana]);
+
+  // Trigger Divide & Conquer algorithm execution
   const handleTriggerAlgorithm = useCallback(() => {
+    // D&C is mana-efficient: costs 15 MP
+    setMana((m) => Math.max(0, m - 15));
+
     if (activeMission === 1) {
       sound.playLaser();
       const result = solveClosestPairDC(missionState.points);
       setExecutionSteps(result.steps);
-      setCurrentStepIndex(0);
-      setIsPlaying(true);
-      setIsExecuting(true);
+      setBenchmarkMetrics({
+        mode: 'DC',
+        dcOps: result.operationsCount,
+        bfOps: result.bruteForceOps,
+        maxDepth: result.maxDepth,
+        dcComplexity: 'O(n log n)',
+      });
     } else if (activeMission === 2) {
       sound.playExplosion();
       const result = solveKaratsubaDC(missionState.karatsubaX, missionState.karatsubaY);
       setExecutionSteps(result.steps);
-      setCurrentStepIndex(0);
-      setIsPlaying(true);
-      setIsExecuting(true);
+      setBenchmarkMetrics({
+        mode: 'DC',
+        dcOps: result.operationsCount,
+        bfOps: result.gradeSchoolMults,
+        maxDepth: result.maxDepth,
+        dcComplexity: 'O(n^1.585)',
+      });
     } else if (activeMission === 3) {
       sound.playLaser();
       const result = solveInversionsDC(missionState.array);
       setExecutionSteps(result.steps);
-      setCurrentStepIndex(0);
-      setIsPlaying(true);
-      setIsExecuting(true);
+      setBenchmarkMetrics({
+        mode: 'DC',
+        dcOps: result.operationsCount,
+        bfOps: result.bruteForceOps,
+        maxDepth: result.maxDepth,
+        dcComplexity: 'O(n log n)',
+      });
     } else if (activeMission === 4) {
       sound.playLaser();
       const result = solveMedianOfMediansDC(missionState.monsters, missionState.targetK);
       setExecutionSteps(result.steps);
-      setCurrentStepIndex(0);
-      setIsPlaying(true);
-      setIsExecuting(true);
+      setBenchmarkMetrics({
+        mode: 'DC',
+        dcOps: result.operationsCount,
+        bfOps: result.bruteForceOps,
+        maxDepth: result.maxDepth,
+        dcComplexity: 'O(n) pior caso',
+      });
     }
-  }, [activeMission, missionState.points, missionState.karatsubaX, missionState.karatsubaY, missionState.array, missionState.monsters, missionState.targetK]);
 
-  // Trigger Brute Force comparison
+    setCurrentStepIndex(0);
+    setIsPlaying(true);
+    setIsExecuting(true);
+  }, [
+    activeMission,
+    missionState.points,
+    missionState.karatsubaX,
+    missionState.karatsubaY,
+    missionState.array,
+    missionState.monsters,
+    missionState.targetK,
+  ]);
+
+  // Trigger Brute Force O(n^2) comparison across all 4 missions
   const handleTriggerBruteForce = useCallback(() => {
+    sound.playExplosion();
+    // Quadratic complexity drains heavy Mana (35 MP) and causes -1 HP exhaustion
+    setMana((m) => Math.max(0, m - 35));
+    setHp((h) => Math.max(1, h - 1));
+
     if (activeMission === 1) {
-      sound.playExplosion();
+      const dcRef = solveClosestPairDC(missionState.points);
       const result = solveClosestPairBruteForce(missionState.points);
       setExecutionSteps(result.steps);
-      setCurrentStepIndex(0);
-      setIsPlaying(true);
-      setIsExecuting(true);
+      setBenchmarkMetrics({
+        mode: 'BF',
+        dcOps: dcRef.operationsCount,
+        bfOps: result.operationsCount,
+        maxDepth: dcRef.maxDepth,
+        dcComplexity: 'O(n log n)',
+      });
+    } else if (activeMission === 2) {
+      const dcRef = solveKaratsubaDC(missionState.karatsubaX, missionState.karatsubaY);
+      const result = solveKaratsubaBruteForce(missionState.karatsubaX, missionState.karatsubaY);
+      setExecutionSteps(result.steps);
+      setBenchmarkMetrics({
+        mode: 'BF',
+        dcOps: dcRef.operationsCount,
+        bfOps: dcRef.gradeSchoolMults,
+        maxDepth: dcRef.maxDepth,
+        dcComplexity: 'O(n^1.585)',
+      });
     } else if (activeMission === 3) {
-      sound.playExplosion();
+      const dcRef = solveInversionsDC(missionState.array);
       const result = solveInversionsBruteForce(missionState.array);
       setExecutionSteps(result.steps);
-      setCurrentStepIndex(0);
-      setIsPlaying(true);
-      setIsExecuting(true);
-    } else {
-      // Default notification
-      handleTriggerAlgorithm();
+      setBenchmarkMetrics({
+        mode: 'BF',
+        dcOps: dcRef.operationsCount,
+        bfOps: result.operationsCount,
+        maxDepth: dcRef.maxDepth,
+        dcComplexity: 'O(n log n)',
+      });
+    } else if (activeMission === 4) {
+      const dcRef = solveMedianOfMediansDC(missionState.monsters, missionState.targetK);
+      const result = solveMedianBruteForce(missionState.monsters, missionState.targetK);
+      setExecutionSteps(result.steps);
+      setBenchmarkMetrics({
+        mode: 'BF',
+        dcOps: dcRef.operationsCount,
+        bfOps: result.operationsCount,
+        maxDepth: dcRef.maxDepth,
+        dcComplexity: 'O(n) pior caso',
+      });
     }
-  }, [activeMission, missionState.points, missionState.array, handleTriggerAlgorithm]);
+
+    setCurrentStepIndex(0);
+    setIsPlaying(true);
+    setIsExecuting(true);
+  }, [
+    activeMission,
+    missionState.points,
+    missionState.karatsubaX,
+    missionState.karatsubaY,
+    missionState.array,
+    missionState.monsters,
+    missionState.targetK,
+  ]);
 
   // Handle auto-step playback timer
   useEffect(() => {
@@ -174,42 +262,14 @@ export default function App() {
             const step = executionSteps[next];
             if (step?.type === 'DIVIDE') {
               sound.playLaser();
-            } else if (step?.type === 'STRIP_FOUND_BETTER' || step?.type === 'BASE_CASE' || step?.type === 'COMBINE_KARATSUBA') {
+            } else if (
+              step?.type === 'STRIP_FOUND_BETTER' ||
+              step?.type === 'BASE_CASE' ||
+              step?.type === 'COMBINE_KARATSUBA'
+            ) {
               sound.playPowerup();
             } else if (step?.type === 'COMPLETED') {
-              sound.playVictory();
-              try {
-                confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
-              } catch {}
-              // Update state with results
-              if (activeMission === 1 && step.data) {
-                setMissionState((prev) => ({
-                  ...prev,
-                  bestPair: step.data.finalPair,
-                  minDist: step.data.finalDist,
-                }));
-                setScore((s) => s + 500);
-              } else if (activeMission === 2 && step.data) {
-                setMissionState((prev) => ({
-                  ...prev,
-                  karatsubaProduct: step.data.finalProduct,
-                }));
-                setScore((s) => s + 850);
-              } else if (activeMission === 3 && step.data) {
-                setMissionState((prev) => ({
-                  ...prev,
-                  array: step.data.finalSorted,
-                  inversions: step.data.totalInversions,
-                }));
-                setScore((s) => s + step.data.totalInversions * 150 + 400);
-              } else if (activeMission === 4 && step.data) {
-                setMissionState((prev) => ({
-                  ...prev,
-                  monsters: step.data.monsters,
-                  targetFound: step.data.finalTarget,
-                }));
-                setScore((s) => s + 750);
-              }
+              applyStepCompletion(step);
             }
             return next;
           });
@@ -220,7 +280,15 @@ export default function App() {
       }
     }
     return () => clearTimeout(timer);
-  }, [isPlaying, currentStepIndex, executionSteps, speed, activeMission]);
+  }, [isPlaying, currentStepIndex, executionSteps, speed, applyStepCompletion]);
+
+  // Step backward manually
+  const handlePrevStep = () => {
+    if (currentStepIndex > 0) {
+      setIsPlaying(false);
+      setCurrentStepIndex((prev) => prev - 1);
+    }
+  };
 
   // Step forward manually
   const handleNextStep = () => {
@@ -229,55 +297,12 @@ export default function App() {
         const next = prev + 1;
         const step = executionSteps[next];
         if (step?.type === 'COMPLETED') {
-          sound.playVictory();
-          try {
-            confetti({ particleCount: 60, spread: 70, origin: { y: 0.6 } });
-          } catch {}
-          if (activeMission === 1 && step.data) {
-            setMissionState((s) => ({
-              ...s,
-              bestPair: step.data.finalPair,
-              minDist: step.data.finalDist,
-            }));
-            setScore((sc) => sc + 500);
-          } else if (activeMission === 2 && step.data) {
-            setMissionState((s) => ({
-              ...s,
-              karatsubaProduct: step.data.finalProduct,
-            }));
-            setScore((sc) => sc + 850);
-          } else if (activeMission === 3 && step.data) {
-            setMissionState((s) => ({
-              ...s,
-              array: step.data.finalSorted,
-              inversions: step.data.totalInversions,
-            }));
-            setScore((sc) => sc + step.data.totalInversions * 150 + 400);
-          } else if (activeMission === 4 && step.data) {
-            setMissionState((s) => ({
-              ...s,
-              monsters: step.data.monsters,
-              targetFound: step.data.finalTarget,
-            }));
-            setScore((sc) => sc + 750);
-          }
+          applyStepCompletion(step);
+          setIsExecuting(false);
         }
         return next;
       });
     }
-  };
-
-  // Collect Chest reward in Skyline mission
-  const handleCollectChest = () => {
-    sound.playVictory();
-    try {
-      confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
-    } catch {}
-    setScore((s) => s + 1000);
-    setMissionState((prev) => ({
-      ...prev,
-      chestCollected: true,
-    }));
   };
 
   // Reset steps
@@ -286,6 +311,7 @@ export default function App() {
     setIsExecuting(false);
     setCurrentStepIndex(-1);
     setExecutionSteps([]);
+    setBenchmarkMetrics(null);
     if (activeMission === 1) {
       setMissionState((prev) => ({
         ...prev,
@@ -306,15 +332,7 @@ export default function App() {
     } else if (activeMission === 4) {
       setMissionState((prev) => ({
         ...prev,
-        monsters: [
-          { id: 1, power: 12, eliminated: false },
-          { id: 2, power: 45, eliminated: false },
-          { id: 3, power: 23, eliminated: false },
-          { id: 4, power: 88, eliminated: false },
-          { id: 5, power: 34, eliminated: false },
-          { id: 6, power: 67, eliminated: false },
-          { id: 7, power: 5, eliminated: false },
-        ],
+        monsters: prev.monsters.map((m) => ({ ...m, eliminated: false })),
         targetFound: null,
       }));
     }
@@ -341,6 +359,7 @@ export default function App() {
           setIsMuted(muted);
         }}
         onOpenDoc={() => setIsTheoryOpen(true)}
+        onRestoreStats={handleRestoreStats}
       />
 
       {/* Main Game & Algorithm Workspace */}
@@ -361,7 +380,6 @@ export default function App() {
             missionState={missionState}
             setMissionState={setMissionState}
             onHeroPositionChange={setHeroPosition}
-            onCollectChest={handleCollectChest}
           />
           <MissionActionBar
             activeMission={activeMission}
@@ -373,7 +391,7 @@ export default function App() {
           />
         </section>
 
-        {/* Right / Bottom: Tactical RPG Dashboard with Hero & Attack Selection */}
+        {/* Right / Bottom: Tactical RPG Dashboard with Hero, Benchmark & Step Controls */}
         <section className="lg:col-span-5 h-full">
           <TacticalDashboard
             activeHeroId={activeMission}
@@ -388,10 +406,12 @@ export default function App() {
             currentStepIndex={currentStepIndex}
             isPlaying={isPlaying}
             onTogglePlay={() => setIsPlaying((p) => !p)}
+            onPrevStep={handlePrevStep}
             onNextStep={handleNextStep}
             onReset={handleReset}
             speed={speed}
             onSpeedChange={setSpeed}
+            benchmarkMetrics={benchmarkMetrics}
           />
         </section>
 
