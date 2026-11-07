@@ -21,6 +21,7 @@ export default function App() {
   const [heroPosition, setHeroPosition] = useState({ x: 400, y: 250 });
   const [isMuted, setIsMuted] = useState(false);
   const [isTheoryOpen, setIsTheoryOpen] = useState(false);
+  const [theoryTab, setTheoryTab] = useState('overview');
 
   // Execution state for D&C and Brute Force algorithms
   const [isExecuting, setIsExecuting] = useState(false);
@@ -358,7 +359,14 @@ export default function App() {
           const muted = sound.toggleMute();
           setIsMuted(muted);
         }}
-        onOpenDoc={() => setIsTheoryOpen(true)}
+        onOpenDoc={() => {
+          setTheoryTab('overview');
+          setIsTheoryOpen(true);
+        }}
+        onOpenSimulator={() => {
+          setTheoryTab('simulator');
+          setIsTheoryOpen(true);
+        }}
         onRestoreStats={handleRestoreStats}
       />
 
@@ -426,6 +434,7 @@ export default function App() {
       <TheoryModal
         isOpen={isTheoryOpen}
         onClose={() => setIsTheoryOpen(false)}
+        initialTab={theoryTab}
       />
 
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Zap, BookOpen, Trophy, HeartHandshake } from 'lucide-react';
+import { Volume2, VolumeX, Zap, BookOpen, Trophy, HeartHandshake, TrendingUp } from 'lucide-react';
 import { sound } from '../audio/soundEffects';
 
 export default function RetroHUD({
@@ -13,6 +13,7 @@ export default function RetroHUD({
   isMuted,
   onToggleMute,
   onOpenDoc,
+  onOpenSimulator,
   onRestoreStats,
 }) {
   const missions = [
@@ -143,6 +144,21 @@ export default function RetroHUD({
           >
             {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-[#2ed573]" />}
           </button>
+
+          {/* Asymptotic Simulator button */}
+          {onOpenSimulator && (
+            <button
+              onClick={() => {
+                sound.playClick();
+                onOpenSimulator();
+              }}
+              title="Simulador de Escala Assintótica (Curvas O(n), O(n log n), O(n^1.585) vs O(n²))"
+              className="p-2 bg-[#0f242a] border-2 border-[#00d2d3] text-[#00d2d3] hover:bg-[#163842] shadow-pixel-sm flex items-center gap-1"
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span className="font-pixel text-[8px] hidden md:inline">ESCALA N</span>
+            </button>
+          )}
 
           {/* Doc button */}
           <button
