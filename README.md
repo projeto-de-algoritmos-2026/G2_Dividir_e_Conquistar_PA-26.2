@@ -10,8 +10,8 @@
 
 | Matrícula | Aluno |
 | :---: | :--- |
-| Preencher | Preencher |
-| Preencher | Preencher |
+| 241025274 | João Eduardo de Souza Leles |
+| Preencher | Giovani de Oliveira Teodoro Coelho |
 
 ---
 
@@ -77,16 +77,26 @@ A janela esquerda é a **Arena de Combate** onde todo o time se posiciona em for
 
 ---
 
+## 📊 Recursos Pedagógicos e Telemetria
+
+* **Benchmark em Tempo Real (D&C vs Força Bruta $O(n^2)$):** Todas as 4 missões permitem disparar tanto o ataque ótimo de **Dividir e Conquistar** quanto a abordagem de **Força Bruta $O(n^2)$**, comparando o número exato de operações executadas, a porcentagem de economia computacional e a profundidade da árvore de recursão.
+* **Sistema Dinâmico de RPG (HP, Mana e Score):** Algoritmos eficientes de Dividir e Conquistar preservam a Mana do esquadrão e concedem bônus de pontuação, enquanto algoritmos quadráticos $O(n^2)$ sobrecarregam a Mana e causam dano de exaustão ao HP (recuperável via Poção no HUD).
+* **Editor de Entradas Customizadas e Pior Caso:** O usuário pode digitar números personalizados $X \times Y$ no Karatsuba, definir vetores de runas customizados na Contagem de Inversões, ou acionar cenários de pior caso na Mediana das Medianas (BFPRT).
+* **Árvore de Recursão Visual e Navegação Bidirecional:** Visualização no Canvas da árvore de 3 ramos do Karatsuba ($z_2, z_1, z_0$), arcos de inversão, janelas de poda BFPRT e controles `ANT` / `PRÓX` no terminal CRT.
+
+---
+
 ## 🕹️ Controles do Jogo
 
 | Comando | Ação |
 | :---: | :--- |
 | `W, A, S, D` ou `Setas` | Movimentar o Herói pelo mapa da masmorra |
 | `ESPAÇO` ou `E` | Conjurar Feitiço de Dividir e Conquistar |
+| `Força Bruta O(n²)` | Executar algoritmo quadrático para comparar operações no painel de Benchmark |
 | `D-Pad Virtual` | Movimentação clicável na tela (suporte a mouse e touch) |
-| `🎲 Geradores` | Criar novos projéteis, torres, runas e monstros dinamicamente |
+| `🎲 Geradores & Inputs` | Gerar cenários aleatórios, pior caso ou digitar entradas customizadas |
 | `➕ Colocar no Herói` | Cria um projétil na posição exata onde o personagem estiver |
-| `Controles do Terminal` | Pausar, avançar passo a passo e controlar velocidade da animação |
+| `PLAY / ANT / PRÓX` | Pausar, voltar ou avançar passo a passo na recursão e ajustar velocidade |
 
 ---
 
