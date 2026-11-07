@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { drawCharacter, drawDungeonBackground } from '../game/spriteRenderer';
 import { sound } from '../audio/soundEffects';
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Zap, Play, RefreshCw, Eye } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Zap } from 'lucide-react';
 
 export default function GameCanvas({
   activeMission,
@@ -13,7 +13,6 @@ export default function GameCanvas({
   missionState,
   setMissionState,
   onHeroPositionChange,
-  onCollectChest,
 }) {
   const canvasRef = useRef(null);
   
@@ -36,7 +35,11 @@ export default function GameCanvas({
   // Keyboard handlers
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Avoid scrolling on arrow keys and space
+      // Avoid interfering when typing inside custom input fields
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+        return;
+      }
+
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
         e.preventDefault();
       }
@@ -91,19 +94,16 @@ export default function GameCanvas({
       hero.isMoving = dx !== 0 || dy !== 0;
 
       if (hero.isMoving) {
-        // Normalize diagonal speed
         const length = Math.sqrt(dx * dx + dy * dy);
         hero.x += (dx / length) * hero.speed;
         hero.y += (dy / length) * hero.speed;
 
-        // Determine direction
         if (Math.abs(dx) > Math.abs(dy)) {
           hero.direction = dx > 0 ? 'right' : 'left';
         } else {
           hero.direction = dy > 0 ? 'down' : 'up';
         }
 
-        // Animate walk frames
         hero.animTimer++;
         if (hero.animTimer % 8 === 0) {
           hero.frame = (hero.frame + 1) % 4;
@@ -124,13 +124,6 @@ export default function GameCanvas({
         onHeroPositionChange({ x: hero.x, y: hero.y });
       }
 
-      // Check Chest collision in Mission 2
-      if (activeMission === 2 && missionState?.skyline?.length > 0 && !missionState.chestCollected) {
-        if (hero.x >= 630 && hero.y >= 300) {
-          if (onCollectChest) onCollectChest();
-        }
-      }
-
       // 1. Draw Dungeon Floor
       drawDungeonBackground(ctx, width, height);
 
@@ -146,7 +139,7 @@ export default function GameCanvas({
       ];
 
       // Draw active hero at controllable position (hero.x, hero.y)
-      const activeType = squad.find(s => s.id === activeMission)?.type || 'mage';
+      const activeType = squad.find((s) => s.id === activeMission)?.type || 'mage';
       drawCharacter(ctx, hero.x, hero.y, activeType, hero.direction, hero.frame, hero.isCasting, true);
 
       // Draw Squad Bench in bottom-left corner with party members
@@ -175,7 +168,7 @@ export default function GameCanvas({
       ctx.restore();
 
       // 4. Draw Floating UI Tips on Canvas
-      drawCanvasOverlay(ctx, width, height, hero);
+      drawCanvasOverlay(ctx, width, height);
 
       animationFrameId = requestAnimationFrame(render);
     };
@@ -185,24 +178,19 @@ export default function GameCanvas({
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [activeMission, missionState, executionSteps, currentStepIndex]);
+  }, [activeMission, missionState, executionSteps, currentStepIndex, onHeroPositionChange]);
 
   // Helper to draw mission specifics
   const drawMissionLayer = (ctx, width, height, missionId, state, steps, stepIdx) => {
-    // Current step data if animating
     const currentStep = steps && stepIdx >= 0 && stepIdx < steps.length ? steps[stepIdx] : null;
 
     if (missionId === 1) {
-      // Mission 1: Closest Pair of Points
       drawClosestPairVisuals(ctx, width, height, state, currentStep);
     } else if (missionId === 2) {
-      // Mission 2: Cavaleiro - Karatsuba Multiplication
       drawKaratsubaVisuals(ctx, width, height, state, currentStep);
     } else if (missionId === 3) {
-      // Mission 3: Inversion Counting
       drawInversionVisuals(ctx, width, height, state, currentStep);
     } else if (missionId === 4) {
-      // Mission 4: QuickSelect
       drawQuickSelectVisuals(ctx, width, height, state, currentStep);
     }
   };
@@ -210,6 +198,8 @@ export default function GameCanvas({
   const drawClosestPairVisuals = (ctx, width, height, state, currentStep) => {
     const points = state?.points || [];
     const bestPair = state?.bestPair;
+    const stepPair = currentStep?.data?.currentPair;
+    const activeSubset = currentStep?.data?.subset;
 
     // Draw active D&C division line if currently stepping
     if (currentStep?.data?.splitX) {
@@ -223,9 +213,8 @@ export default function GameCanvas({
       ctx.lineTo(sx, height - 10);
       ctx.stroke();
 
-      // Label line
       ctx.fillStyle = '#00d2d3';
-      ctx.font = '10px "Press Start 2P"';
+      ctx.font = '9px "Press Start 2P"';
       ctx.fillText(`DIVISÃO X=${Math.round(sx)}`, sx + 6, 25);
       ctx.restore();
     }
@@ -242,15 +231,48 @@ export default function GameCanvas({
       ctx.restore();
     }
 
+    // Draw active step comparison ray (Step-by-step visualization)
+    if (stepPair && stepPair[0] && stepPair[1] && !bestPair) {
+      ctx.save();
+      ctx.strokeStyle = '#f9ca24';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(stepPair[0].x, stepPair[0].y);
+      ctx.lineTo(stepPair[1].x, stepPair[1].y);
+      ctx.stroke();
+
+      const mx = (stepPair[0].x + stepPair[1].x) / 2;
+      const my = (stepPair[0].y + stepPair[1].y) / 2;
+      ctx.fillStyle = '#f9ca24';
+      ctx.font = '8px "Press Start 2P"';
+      const distVal = currentStep?.data?.currentDist ?? currentStep?.data?.dist;
+      if (distVal !== undefined) {
+        ctx.fillText(`${distVal.toFixed(1)}px`, mx + 6, my - 6);
+      }
+      ctx.restore();
+    }
+
     // Draw points (Projectiles / Magic Orbs)
     points.forEach((p, idx) => {
       ctx.save();
       const isSelected = bestPair && (p.id === bestPair[0]?.id || p.id === bestPair[1]?.id);
+      const isBeingTested = stepPair && (p.id === stepPair[0]?.id || p.id === stepPair[1]?.id);
+      const isInSubset = activeSubset?.some((sp) => sp.id === p.id);
+
+      // Outer ring for active recursion subset
+      if (isInSubset || isBeingTested) {
+        ctx.strokeStyle = isBeingTested ? '#f9ca24' : '#00d2d3';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+        ctx.stroke();
+      }
 
       // Pulse ring for points
-      ctx.fillStyle = isSelected ? '#ff4757' : '#2ed573';
+      ctx.fillStyle = isSelected ? '#ff4757' : isBeingTested ? '#f9ca24' : '#2ed573';
       ctx.beginPath();
-      ctx.arc(p.x, p.y, isSelected ? 8 : 5, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, isSelected ? 8 : isBeingTested ? 6.5 : 5, 0, Math.PI * 2);
       ctx.fill();
 
       // Pixel border
@@ -296,68 +318,139 @@ export default function GameCanvas({
     const y = state?.karatsubaY ?? 5678;
     const product = state?.karatsubaProduct;
     const isCompleted = !!product;
+    const dData = currentStep?.data;
+    const activeBranch = dData?.branch || '';
 
-    // Header
     ctx.save();
     ctx.fillStyle = '#f9ca24';
     ctx.font = '9px "Press Start 2P"';
-    ctx.fillText('⚔️ CANHÃO DE CERCO KARATSUBA // DANO DE MULTIPLICAÇÃO', 35, 35);
+    ctx.fillText('⚔️ CANHÃO DE CERCO KARATSUBA // ÁRVORE DE RECURSÃO', 30, 32);
 
     if (currentStep?.message) {
       ctx.fillStyle = '#00d2d3';
       ctx.font = '8px "Press Start 2P"';
-      ctx.fillText(`FASE D&C: ${currentStep.type}`, 35, 55);
+      ctx.fillText(
+        `FASE: ${currentStep.type} ${dData?.depth !== undefined ? `(NÍVEL ${dData.depth})` : ''}`,
+        30,
+        50
+      );
     }
 
-    // Target Fortress Gate
-    ctx.font = '45px monospace';
-    ctx.fillText('🏰', width - 110, 150);
+    // Target Fortress Gate on the right
+    ctx.font = '44px monospace';
+    ctx.fillText('🏰', width - 105, 145);
     ctx.fillStyle = '#e94560';
-    ctx.font = '9px "Press Start 2P"';
-    ctx.fillText('MURALHA DO BOSS', width - 145, 180);
+    ctx.font = '8px "Press Start 2P"';
+    ctx.fillText('MURALHA DO BOSS', width - 145, 175);
 
-    // Multiplicands Box
-    const boxX = 35;
-    const boxY = 80;
+    // Visual Recursion Tree of Karatsuba (Root -> 3 Recursive Branches z2, z1, z0)
+    const rootX = 240;
+    const rootY = 66;
+    const rootW = 210;
+    const rootH = 44;
+
+    const childY = 148;
+    const childW = 148;
+    const childH = 54;
+    const children = [
+      {
+        key: 'z2',
+        cx: 95,
+        title: 'z2 = A × C',
+        sub: dData?.z2 !== undefined ? `= ${dData.z2}` : 'Ramo Alto (10^2m)',
+        color: '#00d2d3',
+        active: activeBranch.includes('z2'),
+      },
+      {
+        key: 'z1',
+        cx: 260,
+        title: 'z1 = (A+B)(C+D)',
+        sub: dData?.z1 !== undefined ? `Gauss = ${dData.z1}` : '- z2 - z0 (10^m)',
+        color: '#f9ca24',
+        active: activeBranch.includes('z1'),
+      },
+      {
+        key: 'z0',
+        cx: 425,
+        title: 'z0 = B × D',
+        sub: dData?.z0 !== undefined ? `= ${dData.z0}` : 'Ramo Baixo (10^0)',
+        color: '#2ed573',
+        active: activeBranch.includes('z0'),
+      },
+    ];
+
+    // Draw tree connector lines from Root to 3 children
+    children.forEach((ch) => {
+      ctx.save();
+      ctx.strokeStyle = ch.active ? ch.color : '#39395f';
+      ctx.lineWidth = ch.active ? 3 : 1.5;
+      ctx.beginPath();
+      ctx.moveTo(rootX, rootY + rootH);
+      ctx.lineTo(ch.cx, childY);
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // Draw Root Node (X × Y)
     ctx.fillStyle = '#14142b';
     ctx.strokeStyle = '#f9ca24';
     ctx.lineWidth = 2;
-    ctx.fillRect(boxX, boxY, 260, 60);
-    ctx.strokeRect(boxX, boxY, 260, 60);
+    ctx.fillRect(rootX - rootW / 2, rootY, rootW, rootH);
+    ctx.strokeRect(rootX - rootW / 2, rootY, rootW, rootH);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '14px "Press Start 2P"';
-    ctx.fillText(`X = ${x}`, boxX + 15, boxY + 26);
-    ctx.fillText(`Y = ${y}`, boxX + 15, boxY + 48);
-
-    // D&C 3-Term Formula Box
-    const fX = 35;
-    const fY = 160;
-    ctx.fillStyle = '#0b0b1a';
-    ctx.strokeStyle = '#39395f';
-    ctx.lineWidth = 2;
-    ctx.fillRect(fX, fY, 380, 105);
-    ctx.strokeRect(fX, fY, 380, 105);
-
+    ctx.font = '9px "Press Start 2P"';
+    ctx.fillText(`RAIZ: ${x} × ${y}`, rootX - rootW / 2 + 12, rootY + 18);
     ctx.fillStyle = '#00d2d3';
-    ctx.font = '8px "Press Start 2P"';
-    ctx.fillText('REDUÇÃO DE GAUSS: 4 MULTIPLICAÇÕES -> 3', fX + 12, fY + 22);
+    ctx.font = '12px "VT323"';
+    const splitInfo =
+      dData?.highX !== undefined
+        ? `A=${dData.highX}, B=${dData.lowX} | C=${dData.highY}, D=${dData.lowY}`
+        : `Divide em 2 metades -> 3 chamadas recursivas`;
+    ctx.fillText(splitInfo, rootX - rootW / 2 + 12, rootY + 35);
 
-    ctx.fillStyle = '#f5f6fa';
-    ctx.font = '11px "VT323"';
-    ctx.fillText(`Fatias: X = 10^m(A) + B  |  Y = 10^m(C) + D`, fX + 12, fY + 42);
+    // Draw the 3 Child Nodes
+    children.forEach((ch) => {
+      const bx = ch.cx - childW / 2;
+      ctx.fillStyle = ch.active ? '#1d1d3b' : '#0b0b1a';
+      ctx.strokeStyle = ch.active ? ch.color : '#39395f';
+      ctx.lineWidth = ch.active ? 3 : 1.5;
+      ctx.fillRect(bx, childY, childW, childH);
+      ctx.strokeRect(bx, childY, childW, childH);
 
-    // Step calculations
-    const dData = currentStep?.data;
-    if (dData?.z0 !== undefined || dData?.highX !== undefined) {
-      ctx.fillStyle = '#2ed573';
-      ctx.fillText(`z0 (BD) = ${dData.z0 ?? 'calculando...'} | z2 (AC) = ${dData.z2 ?? 'calculando...'}`, fX + 12, fY + 65);
-      ctx.fillText(`z1 = (A+B)(C+D) - z2 - z0 = ${dData.z1 ?? 'calculando...'}`, fX + 12, fY + 85);
+      ctx.fillStyle = ch.color;
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillText(ch.title, bx + 8, childY + 20);
+
+      ctx.fillStyle = '#ecf0f1';
+      ctx.font = '13px "VT323"';
+      ctx.fillText(ch.sub, bx + 8, childY + 40);
+    });
+
+    // Combine / Brute Force status box below the tree
+    const infoY = 220;
+    ctx.fillStyle = '#0b0b18';
+    ctx.strokeStyle = dData?.isBruteForce ? '#ff4757' : '#39395f';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(25, infoY, 475, 44);
+    ctx.strokeRect(25, infoY, 475, 44);
+
+    if (dData?.isBruteForce && dData?.dX !== undefined) {
+      ctx.fillStyle = '#ff4757';
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillText(
+        `FORÇA BRUTA O(n²): Dígito ${dData.dX} × Dígito ${dData.dY} = ${dData.elemProd} (Op #${dData.operationsCount})`,
+        35,
+        infoY + 26
+      );
     } else {
-      ctx.fillStyle = '#a4b0be';
-      ctx.fillText('1. z0 = B × D (Recursivo 1)', fX + 12, fY + 62);
-      ctx.fillText('2. z2 = A × C (Recursivo 2)', fX + 12, fY + 78);
-      ctx.fillText('3. z1 = (A+B)×(C+D) - z2 - z0 (Recursivo 3)', fX + 12, fY + 94);
+      ctx.fillStyle = '#2ed573';
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillText(
+        `COMBINAR: XY = z2·10^(2m) + z1·10^m + z0  |  Operações base: ${dData?.operationsCount ?? 0}`,
+        35,
+        infoY + 26
+      );
     }
 
     // Impact Laser Cannon Blast when Completed
@@ -366,18 +459,17 @@ export default function GameCanvas({
       ctx.lineWidth = 6;
       ctx.setLineDash([8, 4]);
       ctx.beginPath();
-      ctx.moveTo(300, 120);
+      ctx.moveTo(345, 90);
       ctx.lineTo(width - 110, 130);
       ctx.stroke();
 
-      // Explosion spark
       ctx.fillStyle = '#ff4757';
-      ctx.font = '12px "Press Start 2P"';
-      ctx.fillText(`💥 DANO KARATSUBA: ${product}!`, 180, 300);
+      ctx.font = '11px "Press Start 2P"';
+      ctx.fillText(`💥 DANO TOTAL: ${product}!`, 190, 298);
 
       ctx.fillStyle = '#2ed573';
       ctx.font = '8px "Press Start 2P"';
-      ctx.fillText('ESCUDO DA MURALHA DESTRUÍDO!', 210, 320);
+      ctx.fillText('MURALHA DO BOSS DESTRUÍDA!', 220, 318);
     }
 
     ctx.restore();
@@ -386,26 +478,31 @@ export default function GameCanvas({
   const drawInversionVisuals = (ctx, width, height, state, currentStep) => {
     const array = state?.array || [];
     const inversions = state?.inversions ?? 0;
-    const startX = 40;
-    const cardW = 54;
-    const cardH = 68;
-    const baseY = 175;
+    const n = array.length || 1;
+    const startX = 35;
+    const cardW = Math.min(54, Math.floor((width - 90) / n) - 8);
+    const gap = Math.min(10, Math.max(4, Math.floor((width - 90 - cardW * n) / Math.max(1, n - 1))));
+    const cardH = 66;
+    const baseY = 185;
 
     // Draw Chaos Boss in background
     ctx.save();
     const isBossHit = currentStep?.type === 'INVERSION_FOUND';
-    ctx.font = isBossHit ? '48px monospace' : '42px monospace';
-    ctx.fillText('👹', width / 2 - 25, 85);
+    ctx.font = isBossHit ? '46px monospace' : '40px monospace';
+    ctx.fillText('👹', width / 2 - 25, 80);
 
     ctx.fillStyle = isBossHit ? '#ff4757' : '#e94560';
     ctx.font = '10px "Press Start 2P"';
-    ctx.fillText(`BOSS DE CAOS // INVERSÕES: ${inversions}`, width / 2 - 130, 115);
+    ctx.fillText(`BOSS DE CAOS // INVERSÕES: ${inversions}`, width / 2 - 135, 108);
 
     if (isBossHit) {
-      // Hit spark effect
       ctx.fillStyle = '#f9ca24';
-      ctx.font = '12px "Press Start 2P"';
-      ctx.fillText(`-CRÍTICO! +${currentStep.data?.countAdded || 1} INVERSÕES`, width / 2 - 120, 50);
+      ctx.font = '10px "Press Start 2P"';
+      ctx.fillText(
+        `-CRÍTICO! +${currentStep.data?.countAdded || 1} INVERSÃO(ÕES)`,
+        width / 2 - 125,
+        42
+      );
     }
     ctx.restore();
 
@@ -413,123 +510,193 @@ export default function GameCanvas({
     if (currentStep?.message) {
       ctx.save();
       ctx.fillStyle = '#00d2d3';
-      ctx.font = '9px "Press Start 2P"';
-      ctx.fillText(`RECURSÃO: ${currentStep.type}`, startX, baseY - 20);
+      ctx.font = '8px "Press Start 2P"';
+      const depthTxt =
+        currentStep.data?.depth !== undefined ? ` (NÍVEL ${currentStep.data.depth})` : '';
+      ctx.fillText(`RECURSÃO: ${currentStep.type}${depthTxt}`, startX, baseY - 28);
       ctx.restore();
+    }
+
+    // Draw Curved Arc connecting inverted runes
+    const leftVal = currentStep?.data?.leftItem;
+    const rightVal = currentStep?.data?.rightItem;
+    if (leftVal !== undefined && rightVal !== undefined) {
+      const idxL = array.indexOf(leftVal);
+      const idxR = array.lastIndexOf(rightVal);
+      if (idxL !== -1 && idxR !== -1 && idxL !== idxR) {
+        const x1 = startX + idxL * (cardW + gap) + cardW / 2;
+        const x2 = startX + idxR * (cardW + gap) + cardW / 2;
+        const midX = (x1 + x2) / 2;
+        ctx.save();
+        ctx.strokeStyle = isBossHit ? '#ff4757' : '#f9ca24';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([4, 2]);
+        ctx.beginPath();
+        ctx.moveTo(x1, baseY);
+        ctx.quadraticCurveTo(midX, baseY - 48, x2, baseY);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     // Draw Rune cards
     array.forEach((val, i) => {
-      const cx = startX + i * (cardW + 10);
+      const cx = startX + i * (cardW + gap);
       ctx.save();
 
-      const isHighlight = currentStep?.data?.merged?.includes(val);
-      ctx.fillStyle = isHighlight ? '#1a2a3a' : '#1e272e';
-      ctx.strokeStyle = isHighlight ? '#00d2d3' : '#f9ca24';
-      ctx.lineWidth = isHighlight ? 4 : 2;
+      const isMergedHighlight = currentStep?.data?.merged?.includes(val);
+      const isLeftSub = currentStep?.data?.left?.includes(val);
+      const isRightSub = currentStep?.data?.right?.includes(val);
+      const isComparing = val === leftVal || val === rightVal;
+
+      ctx.fillStyle = isComparing
+        ? '#3b1522'
+        : isMergedHighlight
+        ? '#1a2a3a'
+        : '#1e272e';
+      ctx.strokeStyle = isComparing
+        ? '#ff4757'
+        : isMergedHighlight
+        ? '#00d2d3'
+        : isLeftSub
+        ? '#f9ca24'
+        : isRightSub
+        ? '#2ed573'
+        : '#f9ca24';
+      ctx.lineWidth = isComparing || isMergedHighlight ? 3.5 : 2;
       ctx.fillRect(cx, baseY, cardW, cardH);
       ctx.strokeRect(cx, baseY, cardW, cardH);
 
       // Card value
       ctx.fillStyle = '#ffffff';
-      ctx.font = '16px "Press Start 2P"';
-      ctx.fillText(String(val), cx + 16, baseY + 42);
+      ctx.font = `${cardW < 45 ? 12 : 15}px "Press Start 2P"`;
+      ctx.fillText(String(val), cx + Math.max(6, cardW / 2 - 10), baseY + 40);
 
       // Index label
       ctx.fillStyle = '#a4b0be';
-      ctx.font = '9px "VT323"';
-      ctx.fillText(`slot ${i}`, cx + 12, baseY + cardH + 14);
+      ctx.font = '10px "VT323"';
+      ctx.fillText(`#${i}`, cx + cardW / 2 - 6, baseY + cardH + 14);
       ctx.restore();
     });
   };
 
   const drawQuickSelectVisuals = (ctx, width, height, state, currentStep) => {
-    const monsters = state?.monsters || [];
+    // Use step snapshot of monsters if available during playback so swaps/eliminations animate live
+    const monsters = currentStep?.data?.monsters || state?.monsters || [];
     const targetK = state?.targetK ?? 4;
     const targetFound = state?.targetFound;
-    const startX = 36;
-    const spacing = 72;
+    const count = monsters.length || 1;
+    const startX = 28;
+    const spacing = count > 7 ? Math.floor((width - 50) / count) : 72;
+    const boxW = Math.min(58, spacing - 8);
 
     ctx.save();
     ctx.fillStyle = '#2ed573';
     ctx.font = '9px "Press Start 2P"';
-    ctx.fillText(`🗡️ MEDIANA DAS MEDIANAS (BFPRT) // META: ${targetK}º ALVO`, startX, 35);
+    ctx.fillText(`🗡️ MEDIANA DAS MEDIANAS (BFPRT) // META: ${targetK}º ALVO`, startX, 32);
 
     if (currentStep?.message) {
       ctx.fillStyle = '#00d2d3';
       ctx.font = '8px "Press Start 2P"';
-      ctx.fillText(`FASE BFPRT: ${currentStep.type}`, startX, 55);
+      ctx.fillText(`FASE BFPRT: ${currentStep.type}`, startX, 50);
     }
     ctx.restore();
 
+    // Draw Active Search Window Bracket [left .. right]
+    const rangeL = currentStep?.data?.left;
+    const rangeR = currentStep?.data?.right;
+    if (rangeL !== undefined && rangeR !== undefined && rangeR >= rangeL) {
+      const bx = startX + rangeL * spacing - 10;
+      const bw = (rangeR - rangeL + 1) * spacing - (spacing - boxW) + 8;
+      ctx.save();
+      ctx.fillStyle = 'rgba(46, 213, 115, 0.08)';
+      ctx.fillRect(bx, 115, bw, 132);
+      ctx.strokeStyle = '#2ed573';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bx, 115, bw, 132);
+      ctx.fillStyle = '#2ed573';
+      ctx.font = '7px "Press Start 2P"';
+      ctx.fillText(`JANELA ATIVA [${rangeL + 1}..${rangeR + 1}]`, bx + 4, 260);
+      ctx.restore();
+    }
+
     // Draw Groups of 5 dashed boundary boxes
     ctx.save();
-    ctx.strokeStyle = 'rgba(0, 210, 211, 0.4)';
+    ctx.strokeStyle = 'rgba(0, 210, 211, 0.45)';
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 4]);
 
     for (let g = 0; g < monsters.length; g += 5) {
       const gCount = Math.min(5, monsters.length - g);
-      const gx = startX + g * spacing - 14;
-      const gw = gCount * spacing - 8;
-      ctx.strokeRect(gx, 120, gw, 130);
+      const gx = startX + g * spacing - 8;
+      const gw = gCount * spacing - (spacing - boxW) + 4;
+      ctx.strokeRect(gx, 120, gw, 122);
 
-      ctx.fillStyle = 'rgba(0, 210, 211, 0.8)';
+      ctx.fillStyle = 'rgba(0, 210, 211, 0.85)';
       ctx.font = '7px "Press Start 2P"';
-      ctx.fillText(`GRUPO ${Math.floor(g / 5) + 1} (BLOCO DE 5)`, gx + 6, 112);
+      ctx.fillText(`BLOCO ${Math.floor(g / 5) + 1} (5)`, gx + 4, 112);
     }
     ctx.restore();
 
     monsters.forEach((m, i) => {
       const x = startX + i * spacing;
-      const y = 145;
-      const isTarget = targetFound && targetFound.id === m.id;
+      const y = 142;
+      const isTarget =
+        (targetFound && targetFound.id === m.id) ||
+        currentStep?.data?.target?.id === m.id;
       const isEliminated = m.eliminated;
       const isPivot = currentStep?.data?.pivot?.id === m.id;
       const isLocalMedian = currentStep?.data?.medians?.some((med) => med.id === m.id);
+      const isComparing = currentStep?.data?.comparing?.some((c) => c.id === m.id);
 
       ctx.save();
       ctx.globalAlpha = isEliminated ? 0.25 : 1.0;
 
       // Platform
-      ctx.fillStyle = isTarget ? '#241c12' : '#141424';
-      ctx.strokeStyle = isPivot ? '#f9ca24' : (isLocalMedian ? '#2ed573' : '#39395f');
-      ctx.lineWidth = isPivot || isTarget ? 3 : 1.5;
-      ctx.fillRect(x - 10, y - 10, 60, 85);
-      ctx.strokeRect(x - 10, y - 10, 60, 85);
+      ctx.fillStyle = isTarget ? '#241c12' : isComparing ? '#2b1420' : '#141424';
+      ctx.strokeStyle = isPivot
+        ? '#f9ca24'
+        : isLocalMedian
+        ? '#2ed573'
+        : isComparing
+        ? '#ff4757'
+        : '#39395f';
+      ctx.lineWidth = isPivot || isTarget || isComparing ? 3 : 1.5;
+      ctx.fillRect(x - 6, y - 10, boxW, 85);
+      ctx.strokeRect(x - 6, y - 10, boxW, 85);
 
       // Monster icon
-      ctx.font = isTarget ? '32px monospace' : '26px monospace';
-      ctx.fillText(isTarget ? '👑' : (isEliminated ? '💀' : '👾'), x + 6, y + 25);
+      ctx.font = isTarget ? '28px monospace' : '22px monospace';
+      ctx.fillText(isTarget ? '👑' : isEliminated ? '💀' : '👾', x + boxW / 2 - 16, y + 24);
 
       // Monster ID
       ctx.fillStyle = '#a4b0be';
       ctx.font = '9px "VT323"';
-      ctx.fillText(`#${m.id}`, x - 4, y + 4);
+      ctx.fillText(`#${m.id}`, x - 2, y + 3);
 
       // Power badge
-      ctx.fillStyle = isTarget ? '#2ed573' : (isPivot ? '#f9ca24' : '#00d2d3');
-      ctx.fillRect(x - 4, y + 42, 48, 16);
+      ctx.fillStyle = isTarget ? '#2ed573' : isPivot ? '#f9ca24' : '#00d2d3';
+      ctx.fillRect(x - 2, y + 40, boxW - 8, 16);
       ctx.fillStyle = '#000000';
-      ctx.font = '9px "Press Start 2P"';
-      ctx.fillText(`P:${m.power}`, x - 1, y + 54);
+      ctx.font = '8px "Press Start 2P"';
+      ctx.fillText(`P:${m.power}`, x, y + 52);
 
       if (isPivot) {
         ctx.fillStyle = '#f9ca24';
-        ctx.font = '7px "Press Start 2P"';
-        ctx.fillText('PIVÔ MoM', x - 4, y + 72);
+        ctx.font = '6px "Press Start 2P"';
+        ctx.fillText('🎯 PIVÔ', x - 2, y + 69);
       } else if (isLocalMedian) {
         ctx.fillStyle = '#2ed573';
         ctx.font = '6px "Press Start 2P"';
-        ctx.fillText('MEDIANA 5', x - 6, y + 72);
+        ctx.fillText('MED 5', x, y + 69);
       }
 
       if (isEliminated) {
         ctx.strokeStyle = '#e94560';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(x - 10, y - 10);
-        ctx.lineTo(x + 50, y + 75);
+        ctx.moveTo(x - 6, y - 10);
+        ctx.lineTo(x + boxW - 6, y + 75);
         ctx.stroke();
       }
 
@@ -537,8 +704,7 @@ export default function GameCanvas({
     });
   };
 
-  const drawCanvasOverlay = (ctx, width, height, hero) => {
-    // Controls overlay badge in top right
+  const drawCanvasOverlay = (ctx, width) => {
     ctx.save();
     ctx.fillStyle = 'rgba(10, 10, 20, 0.75)';
     ctx.fillRect(width - 210, 12, 198, 55);
@@ -628,7 +794,7 @@ export default function GameCanvas({
         />
 
         {/* Action Trigger Banner */}
-        <div className="absolute bottom-3 left-4 flex items-center gap-2">
+        <div className="absolute bottom-3 right-4 flex items-center gap-2">
           <button
             onClick={() => onTriggerAlgorithm()}
             disabled={isExecuting}
