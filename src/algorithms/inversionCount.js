@@ -5,17 +5,19 @@
 export function solveInversionsBruteForce(arr) {
   const steps = [];
   let inversions = 0;
+  let comparisons = 0;
   const n = arr.length;
   const pairs = [];
 
   steps.push({
     type: 'BRUTE_INIT',
     message: `[FORÇA BRUTA O(n²)] Verificando todos os ${Math.round(n * (n - 1) / 2)} pares possíveis nas runas.`,
-    data: { array: [...arr] }
+    data: { array: [...arr], operationsCount: 0, depth: 0, isBruteForce: true }
   });
 
   for (let i = 0; i < n; i++) {
     for (let j = i + 1; j < n; j++) {
+      comparisons++;
       const isInversion = arr[i] > arr[j];
       if (isInversion) {
         inversions++;
@@ -28,8 +30,13 @@ export function solveInversionsBruteForce(arr) {
         data: {
           leftItem: arr[i],
           rightItem: arr[j],
+          leftIndex: i,
+          rightIndex: j,
           inversions,
-          countAdded: isInversion ? 1 : 0
+          countAdded: isInversion ? 1 : 0,
+          operationsCount: comparisons,
+          depth: 1,
+          isBruteForce: true
         }
       });
     }
@@ -37,28 +44,41 @@ export function solveInversionsBruteForce(arr) {
 
   steps.push({
     type: 'COMPLETED',
-    message: `[FORÇA BRUTA CONCLUÍDA] Total de ${inversions} inversões encontradas após checar todos os pares sequencialmente.`,
+    message: `[FORÇA BRUTA CONCLUÍDA] Total de ${inversions} inversões encontradas após ${comparisons} comparações par a par.`,
     data: {
       finalSorted: [...arr].sort((a, b) => a - b),
       totalInversions: inversions,
+      operationsCount: comparisons,
+      bruteForceOps: comparisons,
+      maxDepth: 1,
       isBruteForce: true
     }
   });
 
-  return { inversions, steps };
+  return {
+    inversions,
+    operationsCount: comparisons,
+    bruteForceOps: comparisons,
+    maxDepth: 1,
+    steps
+  };
 }
 
 export function solveInversionsDC(originalArray) {
   const steps = [];
   let totalInversions = 0;
+  let operationsCount = 0;
+  let maxDepth = 0;
+  const bruteForceOps = Math.round((originalArray.length * (originalArray.length - 1)) / 2);
 
   steps.push({
     type: 'INIT',
     message: `Iniciando Verificação de Entropia com ${originalArray.length} runas elementais: [${originalArray.join(', ')}].`,
-    data: { array: [...originalArray] }
+    data: { array: [...originalArray], operationsCount: 0, depth: 0 }
   });
 
   function countInversionsRec(arr, depth = 0) {
+    if (depth > maxDepth) maxDepth = depth;
     const n = arr.length;
 
     // Base Case: Array with 1 or 0 elements has 0 inversions and is already sorted
@@ -74,7 +94,7 @@ export function solveInversionsDC(originalArray) {
     steps.push({
       type: 'DIVIDE',
       message: `DIVIDIR (Nível ${depth}): Subdividindo runas [${arr.join(', ')}] em Esquerda [${left.join(', ')}] e Direita [${right.join(', ')}].`,
-      data: { left, right, depth }
+      data: { left, right, depth, operationsCount }
     });
 
     // CONQUER: Recursively count inversions in both halves
@@ -91,8 +111,12 @@ export function solveInversionsDC(originalArray) {
       message: `CONQUISTAR/MERGE (Nível ${depth}): Mesclado [${mergeResult.sorted.join(', ')}] com +${mergeResult.inversions} inversões cruzadas.`,
       data: {
         merged: mergeResult.sorted,
+        left: leftResult.sorted,
+        right: rightResult.sorted,
         subInversions: subTotal,
-        inversionPairs: mergeResult.pairs
+        inversionPairs: mergeResult.pairs,
+        depth,
+        operationsCount
       }
     });
 
@@ -110,6 +134,7 @@ export function solveInversionsDC(originalArray) {
     const pairs = [];
 
     while (i < left.length && j < right.length) {
+      operationsCount++;
       if (left[i] <= right[j]) {
         sorted.push(left[i]);
         i++;
@@ -127,7 +152,14 @@ export function solveInversionsDC(originalArray) {
         steps.push({
           type: 'INVERSION_FOUND',
           message: `⚡ MALDIÇÃO DETECTADA: Runa ${right[j]} < Runa ${left[i]}! Gera ${count} inversões com [${left.slice(i).join(', ')}].`,
-          data: { leftItem: left[i], rightItem: right[j], countAdded: count }
+          data: {
+            leftItem: left[i],
+            rightItem: right[j],
+            remainingLeft: left.slice(i),
+            countAdded: count,
+            depth,
+            operationsCount
+          }
         });
 
         j++;
@@ -147,15 +179,18 @@ export function solveInversionsDC(originalArray) {
     return { sorted, inversions: invCount, pairs };
   }
 
-  const finalResult = countInversionsRec([...originalArray]);
+  const finalResult = countInversionsRec([...originalArray], 0);
   totalInversions = finalResult.inversions;
 
   steps.push({
     type: 'COMPLETED',
-    message: `PURIFICAÇÃO COMPLETA! Total de ${totalInversions} inversões de caos corrigidas. Runas alinhadas em harmonia: [${finalResult.sorted.join(', ')}].`,
+    message: `PURIFICAÇÃO COMPLETA! Total de ${totalInversions} inversões corrigidas em ${operationsCount} comparações no Merge (vs ${bruteForceOps} na Força Bruta).`,
     data: {
       finalSorted: finalResult.sorted,
       totalInversions,
+      operationsCount,
+      bruteForceOps,
+      maxDepth,
       isBruteForce: false
     }
   });
@@ -163,6 +198,9 @@ export function solveInversionsDC(originalArray) {
   return {
     sorted: finalResult.sorted,
     inversions: totalInversions,
+    operationsCount,
+    bruteForceOps,
+    maxDepth,
     steps,
   };
 }

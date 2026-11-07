@@ -17,7 +17,7 @@ export function solveClosestPairBruteForce(points) {
   steps.push({
     type: 'BRUTE_INIT',
     message: `[FORÇA BRUTA O(n²)] Iniciando checagem de todos os ${Math.round(n * (n - 1) / 2)} pares possíveis.`,
-    data: { points }
+    data: { points, operationsCount: 0, depth: 0, isBruteForce: true }
   });
 
   for (let i = 0; i < n; i++) {
@@ -38,7 +38,10 @@ export function solveClosestPairBruteForce(points) {
           currentDist: d,
           bestPair,
           minDist,
-          comparisons
+          comparisons,
+          operationsCount: comparisons,
+          depth: 1,
+          isBruteForce: true
         }
       });
     }
@@ -47,15 +50,33 @@ export function solveClosestPairBruteForce(points) {
   steps.push({
     type: 'COMPLETED',
     message: `[FORÇA BRUTA CONCLUÍDA] Foram necessárias ${comparisons} comparações para encontrar a menor distância (${minDist.toFixed(1)}px).`,
-    data: { finalPair: bestPair, finalDist: minDist, comparisons, isBruteForce: true }
+    data: {
+      finalPair: bestPair,
+      finalDist: minDist,
+      comparisons,
+      operationsCount: comparisons,
+      bruteForceOps: comparisons,
+      maxDepth: 1,
+      isBruteForce: true
+    }
   });
 
-  return { minDist, pair: bestPair, comparisons, steps };
+  return {
+    minDist,
+    pair: bestPair,
+    comparisons,
+    operationsCount: comparisons,
+    bruteForceOps: comparisons,
+    maxDepth: 1,
+    steps
+  };
 }
 
 export function solveClosestPairDC(points) {
   const steps = [];
   let comparisons = 0;
+  let maxDepth = 0;
+  const bruteForceOps = Math.round((points.length * (points.length - 1)) / 2);
 
   // Step 1: Pre-sort points by X coordinate
   const ptsSortedX = [...points].sort((a, b) => a.x - b.x);
@@ -63,10 +84,11 @@ export function solveClosestPairDC(points) {
   steps.push({
     type: 'INIT',
     message: `Iniciando Dividir e Conquistar com ${points.length} projéteis ordenados por X.`,
-    data: { points: ptsSortedX }
+    data: { points: ptsSortedX, operationsCount: 0, depth: 0 }
   });
 
-  function closestPairRec(pts) {
+  function closestPairRec(pts, depth = 0) {
+    if (depth > maxDepth) maxDepth = depth;
     const n = pts.length;
 
     // Base Case: 2 or 3 points -> Brute Force local
@@ -85,8 +107,15 @@ export function solveClosestPairDC(points) {
       }
       steps.push({
         type: 'BASE_CASE',
-        message: `Caso Base (n=${n}): Par mais próximo local dist=${minD.toFixed(1)}px`,
-        data: { subset: pts, pair: minPair, dist: minD }
+        message: `Caso Base (Nível ${depth}, n=${n}): Par mais próximo local dist=${minD.toFixed(1)}px`,
+        data: {
+          subset: pts,
+          pair: minPair,
+          currentPair: minPair,
+          dist: minD,
+          depth,
+          operationsCount: comparisons
+        }
       });
       return { dist: minD, pair: minPair };
     }
@@ -99,21 +128,35 @@ export function solveClosestPairDC(points) {
 
     steps.push({
       type: 'DIVIDE',
-      message: `DIVIDIR: Linha de Fissura em X = ${Math.round(midPoint.x)}. Esquerda: ${leftPts.length} alvos, Direita: ${rightPts.length} alvos.`,
-      data: { splitX: midPoint.x, leftPts, rightPts }
+      message: `DIVIDIR (Nível ${depth}): Linha de Fissura em X = ${Math.round(midPoint.x)}. Esquerda: ${leftPts.length} alvos, Direita: ${rightPts.length} alvos.`,
+      data: {
+        splitX: midPoint.x,
+        leftPts,
+        rightPts,
+        subset: pts,
+        depth,
+        operationsCount: comparisons
+      }
     });
 
     // CONQUER: Recursively solve left and right halves
-    const leftResult = closestPairRec(leftPts);
-    const rightResult = closestPairRec(rightPts);
+    const leftResult = closestPairRec(leftPts, depth + 1);
+    const rightResult = closestPairRec(rightPts, depth + 1);
 
     let d = Math.min(leftResult.dist, rightResult.dist);
     let bestPair = leftResult.dist < rightResult.dist ? leftResult.pair : rightResult.pair;
 
     steps.push({
       type: 'CONQUER_HALVES',
-      message: `CONQUISTAR: Menor distância entre metades: δ = ${d.toFixed(1)}px`,
-      data: { splitX: midPoint.x, delta: d, currentBest: bestPair }
+      message: `CONQUISTAR (Nível ${depth}): Menor distância entre metades: δ = ${d.toFixed(1)}px`,
+      data: {
+        splitX: midPoint.x,
+        delta: d,
+        currentBest: bestPair,
+        currentPair: bestPair,
+        depth,
+        operationsCount: comparisons
+      }
     });
 
     // COMBINE: Strip of points within d distance from mid line
@@ -129,8 +172,15 @@ export function solveClosestPairDC(points) {
 
     steps.push({
       type: 'STRIP_CHECK',
-      message: `COMBINAR: Verificando ${strip.length} pontos na faixa central [X ± ${d.toFixed(0)}px] ordenados por Y.`,
-      data: { splitX: midPoint.x, delta: d, strip }
+      message: `COMBINAR (Nível ${depth}): Verificando ${strip.length} pontos na faixa central [X ± ${d.toFixed(0)}px] ordenados por Y.`,
+      data: {
+        splitX: midPoint.x,
+        delta: d,
+        strip,
+        subset: strip,
+        depth,
+        operationsCount: comparisons
+      }
     });
 
     // Check at most 7 neighbors in strip
@@ -144,7 +194,15 @@ export function solveClosestPairDC(points) {
           steps.push({
             type: 'STRIP_FOUND_BETTER',
             message: `⚡ NOVO PAR CRÍTICO NA FAIXA CENTRAL! Distância: ${d.toFixed(1)}px`,
-            data: { pair: bestPair, dist: d }
+            data: {
+              pair: bestPair,
+              currentPair: bestPair,
+              dist: d,
+              splitX: midPoint.x,
+              delta: d,
+              depth,
+              operationsCount: comparisons
+            }
           });
         }
       }
@@ -153,18 +211,29 @@ export function solveClosestPairDC(points) {
     return { dist: d, pair: bestPair };
   }
 
-  const result = closestPairRec(ptsSortedX);
+  const result = closestPairRec(ptsSortedX, 0);
 
   steps.push({
     type: 'COMPLETED',
-    message: `ALGORITMO D&C CONCLUÍDO! Par Crítico detectado: Distância = ${result.dist.toFixed(1)}px com apenas ${comparisons} comparações (vs Força Bruta ${Math.round(points.length * (points.length - 1) / 2)}).`,
-    data: { finalPair: result.pair, finalDist: result.dist, comparisons, isBruteForce: false }
+    message: `ALGORITMO D&C CONCLUÍDO! Par Crítico detectado: Distância = ${result.dist.toFixed(1)}px com apenas ${comparisons} comparações (vs Força Bruta ${bruteForceOps}).`,
+    data: {
+      finalPair: result.pair,
+      finalDist: result.dist,
+      comparisons,
+      operationsCount: comparisons,
+      bruteForceOps,
+      maxDepth,
+      isBruteForce: false
+    }
   });
 
   return {
     minDist: result.dist,
     pair: result.pair,
     comparisons,
+    operationsCount: comparisons,
+    bruteForceOps,
+    maxDepth,
     steps,
   };
 }
