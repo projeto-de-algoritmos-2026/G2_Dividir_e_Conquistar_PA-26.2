@@ -1,156 +1,72 @@
-# Pixel Conquer: The Divide & Conquer Quest
+# G2_Dividir_e_Conquistar_PA-26.2
 
-**Número da Dupla / Grupo:** G2  
-**Conteúdo da Disciplina:** Dividir e Conquistar (D&C)  
-**Semestre:** 2026.2  
+**Número da Lista**: 4<br>
+**Conteúdo da Disciplina**: Dividir e Conquistar
 
----
-
-## 👥 Alunos
-
+## Alunos
 | Matrícula | Aluno |
-| :---: | :--- |
+| -- | -- |
 | 241025274 | João Eduardo de Souza Leles |
-| Preencher | Giovani de Oliveira Teodoro Coelho |
+| 241032500 | Giovani de Oliveira Teodoro Coelho |
 
----
+## Sobre
+Este projeto é uma aplicação interativa (com temática de RPG tático em pixel art retrô 16-bit) focada na visualização e aplicação prática do paradigma de **Dividir e Conquistar (Divide and Conquer)**. O usuário atua comandando um esquadrão composto por 4 heróis clássicos de RPG (Mago, Cavaleiro, Bárbaro e Assassino) passando por fases de planejamento no **Dashboard Tático de Comando** e execução na **Arena de Combate**, onde as mecânicas centrais de sobrevivência, ataque e resolução de enigmas são impulsionadas diretamente por algoritmos clássicos de Dividir e Conquistar.
 
-## 🎮 Sobre o Projeto
+O objetivo principal é demonstrar como o paradigma quebra problemas complexos recursivamente em subproblemas menores, resolvendo-os de forma independente e combinando suas soluções com extrema eficiência (frequentemente reduzindo a complexidade de algoritmos quadráticos $O(n^2)$ para $O(n \log n)$ ou $O(n)$). O sistema inclui visualização gráfica em tempo real na arena de batalha, passo a passo interativo da recursão, benchmark comparativo direto contra abordagens de Força Bruta ($O(n^2)$) e telemetria de impacto em atributos de RPG (HP, Mana e Pontuação).
 
-**Pixel Conquer** é um RPG tático e laboratório de algoritmos interativo em **Pixel Art 2D retrô (16-bit)** desenvolvido com **React, JavaScript e Vite**. O usuário comanda um esquadrão composto por **4 classes de heróis clássicos de RPG** dentro de uma arena de batalha:
+## Vídeo de apresentação
+[Assistir ao Vídeo de Apresentação](https://drive.google.com/file/d/1MQkfMt_Aok0O8hdGEFca9xOLmKAAX6dA/view?usp=sharing)
 
-* 🧙‍♂️ **Mago Arcana** (Fase 1: Par de Pontos Mais Próximos - $O(n \log n)$)
-* ⚔️ **Cavaleiro Real** (Fase 2: Multiplicação Rápida de Karatsuba - $O(n^{\log_2 3}) \approx O(n^{1.585})$)
-* 🪓 **Bárbaro Feroz** (Fase 3: Contagem de Inversões / Altar do Caos - $O(n \log n)$)
-* 🗡️ **Assassino das Sombras** (Fase 4: Mediana das Medianas / BFPRT - $O(n)$ pior caso)
+## Instalação
+**Linguagem**: JavaScript (ES6+)<br>
+**Framework**: React 18 + Vite
 
-A janela esquerda é a **Arena de Combate** onde todo o time se posiciona em formação tática e o herói selecionado é controlado em tempo real (`W, A, S, D` ou setas). A janela direita é o **Dashboard Tático de Comando**, onde o usuário escolhe qual membro do time vai agir, seleciona habilidades de Dividir e Conquistar vs Força Bruta ($O(n^2)$), e controla passo a passo o visualizador de recursão.
+**Pré-requisitos**:
+- Node.js (versão 18+ recomendada)
+- npm
 
----
+Para rodar o projeto localmente, execute os seguintes comandos no terminal, estando no diretório raiz do projeto:
 
-## ⚔️ As 4 Missões & Algoritmos Implementados
-
-### 1. Radar de Fissura: Par de Pontos Mais Próximos (Closest Pair of Points)
-* **Temática no Jogo:** Projéteis mágicos e orbes flutuam pela arena em rota de colisão. O herói canaliza o feitiço para detectar e destruir o par de projéteis mais perigosos antes que sobrecarreguem o escudo.
-* **Paradigma D&C:**
-  * **Dividir:** Pré-ordena os pontos por coordenada X e divide o plano verticalmente por uma linha de fissura central em metades esquerda e direita.
-  * **Conquistar:** Calcula recursivamente a menor distância euclidiana nas metades esquerda ($\delta_L$) e direita ($\delta_R$), obtendo $\delta = \min(\delta_L, \delta_R)$.
-  * **Combinar:** Filtra os pontos que caem na faixa vertical central $[X_{mid} - \delta, X_{mid} + \delta]$, ordena-os por Y e compara cada ponto com no máximo **7 vizinhos** subsequentes na faixa.
-* **Complexidade:** $O(n \log n)$ contra $O(n^2)$ de força bruta.
-* **Recorrência:** $T(n) = 2T(n/2) + O(n \log n) \Rightarrow O(n \log n)$.
-
----
-
-### 2. Canhão de Cerco: Multiplicação de Karatsuba (Karatsuba Fast Multiplication)
-* **Temática no Jogo:** Para quebrar o escudo de titânio da fortaleza do Boss, o Cavaleiro precisa multiplicar valores colossais de mana e dano de cerco. A multiplicação tradicional escolar realiza $n^2$ multiplicações elementares. Karatsuba utiliza Dividir e Conquistar para quebrar os números em metades e calcular o produto final com apenas 3 multiplicações recursivas.
-* **Paradigma D&C:**
-  * **Dividir:** Divide os números $X$ e $Y$ em metades: $X = 10^m A + B$ e $Y = 10^m C + D$, com $m = \lfloor n/2 \rfloor$.
-  * **Conquistar:** Em vez de 4 multiplicações ($AC, AD, BC, BD$), calcula recursivamente apenas 3:
-    1. $z_0 = B \times D$
-    2. $z_2 = A \times C$
-    3. $z_1 = (A + B) \times (C + D) - z_2 - z_0$ (Identidade de Gauss)
-  * **Combinar:** Une os termos com deslocamento de base: $Resultado = z_2 \times 10^{2m} + z_1 \times 10^m + z_0$.
-* **Complexidade:** $O(n^{\log_2 3}) \approx O(n^{1.585})$ contra $O(n^2)$ da multiplicação tradicional.
-* **Recorrência:** $T(n) = 3T(n/2) + O(n) \Rightarrow O(n^{1.585})$.
-
----
-
-### 3. O Altar das Runas: Contagem de Inversões (Inversion Counting com Merge Sort)
-* **Temática no Jogo:** O Boss do Caos corrompeu o altar do reino desorganizando as runas sagradas. Quanto mais fora de ordem as runas estiverem, maior é o poder da maldição. O herói golpeia o altar, purifica as runas e causa dano crítico ao Boss proporcional ao número de inversões corrigidas!
-* **Paradigma D&C:**
-  * **Dividir:** Divide o array de runas na metade esquerda e metade direita.
-  * **Conquistar:** Conta recursivamente as inversões contidas no lado esquerdo e no lado direito.
-  * **Combinar:** Durante a etapa de intercalação (*merge*) com dois ponteiros $i$ e $j$, se $Direita[j] < Esquerda[i]$, então o elemento $Direita[j]$ é menor que **todos os elementos restantes** da metade esquerda. Incrementa o contador em $(tam\_esquerda - i)$ e alinha as runas.
-* **Complexidade:** $O(n \log n)$ contra $O(n^2)$ de checagem ingênua.
-* **Recorrência:** $T(n) = 2T(n/2) + O(n) \Rightarrow O(n \log n)$.
-
----
-
-### 4. Sniper da Mediana: Mediana das Medianas (Algoritmo BFPRT)
-* **Temática no Jogo:** Uma tropa de monstros guarda os portões. O Assassino precisa isolar cirurgicamente o $k$-ésimo alvo de elite. Para evitar os piores casos degenerados do QuickSelect ($O(n^2)$ com pivôs ruins), o Assassino aplica a Mediana das Medianas, garantindo tempo de execução linear estrito $O(n)$ mesmo no pior caso absoluto!
-* **Paradigma D&C:**
-  * **Dividir:** Divide o exército de monstros em blocos de 5 elementos. Ordena cada bloco em tempo constante $O(1)$ e extrai suas medianas locais.
-  * **Conquistar:** Encontra recursivamente a *Mediana das Medianas* $M$. Este pivô garante que pelo menos $30\%$ dos elementos são estritamente menores e $30\%$ maiores.
-  * **Partição e Poda:** Particiona o array ao redor de $M$ e descarta a metade irrelevante onde $k$ não se encontra.
-* **Complexidade:** $O(n)$ estrito no pior caso!
-* **Recorrência:** $T(n) \le T(n/5) + T(7n/10) + O(n) \Rightarrow O(n)$.
-
----
-
-## 📊 Recursos Pedagógicos e Telemetria
-
-* **Benchmark em Tempo Real (D&C vs Força Bruta $O(n^2)$):** Todas as 4 missões permitem disparar tanto o ataque ótimo de **Dividir e Conquistar** quanto a abordagem de **Força Bruta $O(n^2)$**, comparando o número exato de operações executadas, a porcentagem de economia computacional e a profundidade da árvore de recursão.
-* **Sistema Dinâmico de RPG (HP, Mana e Score):** Algoritmos eficientes de Dividir e Conquistar preservam a Mana do esquadrão e concedem bônus de pontuação, enquanto algoritmos quadráticos $O(n^2)$ sobrecarregam a Mana e causam dano de exaustão ao HP (recuperável via Poção no HUD).
-* **Editor de Entradas Customizadas e Pior Caso:** O usuário pode digitar números personalizados $X \times Y$ no Karatsuba, definir vetores de runas customizados na Contagem de Inversões, ou acionar cenários de pior caso na Mediana das Medianas (BFPRT).
-* **Árvore de Recursão Visual e Navegação Bidirecional:** Visualização no Canvas da árvore de 3 ramos do Karatsuba ($z_2, z_1, z_0$), arcos de inversão, janelas de poda BFPRT e controles `ANT` / `PRÓX` no terminal CRT.
-
----
-
-## 🕹️ Controles do Jogo
-
-| Comando | Ação |
-| :---: | :--- |
-| `W, A, S, D` ou `Setas` | Movimentar o Herói pelo mapa da masmorra |
-| `ESPAÇO` ou `E` | Conjurar Feitiço de Dividir e Conquistar |
-| `Força Bruta O(n²)` | Executar algoritmo quadrático para comparar operações no painel de Benchmark |
-| `D-Pad Virtual` | Movimentação clicável na tela (suporte a mouse e touch) |
-| `🎲 Geradores & Inputs` | Gerar cenários aleatórios, pior caso ou digitar entradas customizadas |
-| `➕ Colocar no Herói` | Cria um projétil na posição exata onde o personagem estiver |
-| `PLAY / ANT / PRÓX` | Pausar, voltar ou avançar passo a passo na recursão e ajustar velocidade |
-
----
-
-## 💻 Tecnologias Utilizadas
-
-* **React 18** (Componentização, gerenciamento de estado e hooks reativos)
-* **JavaScript (ES6+)**
-* **Vite** (Build ultrarrápido e Hot Module Replacement)
-* **HTML5 Canvas 2D API** (Renderização pixel art a 60 FPS com ciclo de animação do herói)
-* **Tailwind CSS** (Estilização retrô 16-bit com relevos chanfrados e sombras pixeladas)
-* **Web Audio API** (Sintetizador chiptune 8-bit próprio sem dependência de áudios externos)
-* **Lucide Icons & Canvas Confetti**
-
----
-
-## 🚀 Como Executar o Projeto Localmente
-
-### Pré-requisitos:
-* **Node.js** (versão 18+ ou superior recomendada)
-* **npm** ou **yarn**
-
-### Passo a passo:
-
-1. Clone o repositório:
 ```bash
-git clone https://github.com/Projeto-de-Algoritmos-2026-2/G2_Dividir_e_Conquistar_PA-26.2.git
-cd G2_Dividir_e_Conquistar_PA-26.2
-```
-
-2. Instale as dependências:
-```bash
+# Instale as dependências do projeto
 npm install
-```
 
-3. Inicie o servidor de desenvolvimento:
-```bash
+# Inicie o servidor local de desenvolvimento
 npm run dev
 ```
 
-4. Acesse no seu navegador:
-```
-http://localhost:5173
-```
+## Uso
+1. Após iniciar o servidor, abra o navegador no endereço exibido no terminal (geralmente `http://localhost:5173`).
+2. O sistema é dividido em duas áreas principais: **Arena de Combate** (à esquerda) e **Dashboard Tático de Comando** (à direita).
+3. Na **Arena de Combate**, controle a movimentação do herói ativo utilizando `W, A, S, D` ou as `Setas` do teclado (ou o D-Pad virtual), explore o cenário, posicione novos alvos clicando diretamente na arena ou utilize a barra de ações para gerar novas instâncias e cenários de teste.
+4. No **Dashboard Tático**, selecione qual personagem do esquadrão deseja ativar:
+   - **🧙‍♂️ Mago Arcana**: Dispare a habilidade *Radar de Fissura* para detectar e neutralizar o **Par de Pontos Mais Próximos** antes que colidam na arena.
+   - **⚔️ Cavaleiro Real**: Dispare o *Canhão de Cerco* aplicando a **Multiplicação Rápida de Karatsuba** para quebrar a muralha do Boss com valores gigantescos de dano.
+   - **🪓 Bárbaro Feroz**: Golpeie o altar corrompido com a **Contagem de Inversões**, medindo o caos das runas elementais e desferindo dano crítico no Boss.
+   - **🗡️ Assassino das Sombras**: Execute o golpe fatal com a **Mediana das Medianas (BFPRT)** para isolar o $k$-ésimo alvo de elite com tempo linear determinístico estrito.
+5. Utilize os controles do **Terminal de Recursão** (`Auto Play`, `Passo`, `Reiniciar` e slider de velocidade) para inspecionar cada nível de divisão, caso base e merge da árvore recursiva.
+6. Teste o botão de **Força Bruta $O(n^2)$** para comparar em tempo real a quantidade massiva de operações evitadas pelo algoritmo de Dividir e Conquistar.
+7. A qualquer momento, clique no botão **TEORIA** no cabeçalho para abrir o Grimório e consultar as relações de recorrência, Teorema Mestre e pseudocódigo de cada algoritmo.
 
-Para gerar a versão otimizada de produção:
-```bash
-npm run build
-npm run preview
-```
+## Outros
+**Decisões e Regras dos Algoritmos**:
 
----
+- **Radar de Fissura (Par de Pontos Mais Próximos / Closest Pair of Points - $O(n \log n)$)**:
+  - **Problema**: Detectar quais dois projéteis/orbes mágicos em voo estão mais próximos entre si na arena 2D.
+  - **Estratégia D&C**: Pré-ordena os pontos pela coordenada X e divide o plano verticalmente por uma linha mediana $X_{mid}$. Conquista recursivamente a menor distância euclidiana nas metades esquerda ($\delta_L$) e direita ($\delta_R$), estabelecendo $\delta = \min(\delta_L, \delta_R)$. Na etapa de combinação, filtra os pontos situados na faixa central $[X_{mid} - \delta, X_{mid} + \delta]$, ordenando-os por Y e comparando cada ponto com no máximo 7 vizinhos geométricos subsequentes.
+  - **Recorrência & Complexidade**: $T(n) = 2T(n/2) + O(n \log n) \Rightarrow O(n \log n)$, superando amplamente as $\binom{n}{2} = O(n^2)$ comparações da Força Bruta.
 
-## 📚 Grimório de Referências
+- **Canhão de Cerco (Multiplicação Rápida de Karatsuba - $O(n^{\log_2 3}) \approx O(n^{1.585})$)**:
+  - **Problema**: Calcular o dano de cerco resultante da multiplicação de dois inteiros colossais com muitos dígitos para romper a muralha protegida do Boss.
+  - **Estratégia D&C**: Fatia os números $X$ e $Y$ em metades de $m = \lfloor n/2 \rfloor$ dígitos: $X = 10^m A + B$ e $Y = 10^m C + D$. Em vez de computar 4 multiplicações parciais ($AC, AD, BC, BD$ como no método escolar quadrático), Karatsuba aplica o truque algébrico de Gauss para calcular apenas 3 multiplicações recursivas: $z_0 = BD$, $z_2 = AC$ e $z_1 = (A+B)(C+D) - z_2 - z_0$. Combina os termos através de deslocamentos de base: $Resultado = z_2 \cdot 10^{2m} + z_1 \cdot 10^m + z_0$.
+  - **Recorrência & Complexidade**: $T(n) = 3T(n/2) + O(n) \Rightarrow O(n^{\log_2 3}) \approx O(n^{1.585})$, permitindo operações aritméticas velozes em números gigantescos.
 
-* CORMEN, Thomas H. et al. *Algoritmos: teoria e prática*. 3. ed. Rio de Janeiro: Elsevier, 2012.
-* KLEINBERG, Jon; TARDOS, Éva. *Algorithm Design*. Boston: Pearson / Addison-Wesley, 2006.
-* ROUGHGARDEN, Tim. *Algorithms Illuminated: Part 1: The Basics*. Soundlikeyourself Publishing, 2017.
+- **O Altar das Runas (Contagem de Inversões com Merge Sort - $O(n \log n)$)**:
+  - **Problema**: Medir o nível de entropia/caos de runas elementais no altar (onde pares fora de ordem $i < j$ com $A[i] > A[j]$ fortalecem a maldição do Boss).
+  - **Estratégia D&C**: Baseia-se no algoritmo de ordenação Merge Sort. Divide o vetor de runas recursivamente em metades até atingir casos base unitários ($0$ inversões). Conquista contando as inversões internas à esquerda ($inv_L$) e à direita ($inv_R$). Durante a etapa de intercalação (*merge*), sempre que um elemento da metade direita for menor que o elemento da metade esquerda, adiciona-se $(tam\_esquerda - i)$ ao contador de inversões cruzadas, pois o elemento à direita é menor que todos os itens restantes na esquerda que já estavam ordenados.
+  - **Recorrência & Complexidade**: $T(n) = 2T(n/2) + O(n) \Rightarrow O(n \log n)$, em contraste com o custo $O(n^2)$ de examinar todos os pares um a um.
+
+- **Sniper da Mediana (Mediana das Medianas / Algoritmo BFPRT - $O(n)$ Pior Caso)**:
+  - **Problema**: Isolar com precisão cirúrgica o monstro que detém o $k$-ésimo nível de poder no exército inimigo sem sofrer a degradação para $O(n^2)$ que o QuickSelect comum sofre em pivôs desbalanceados.
+  - **Estratégia D&C**: Divide a tropa de monstros em blocos de exatamente 5 elementos. Ordena cada bloco individualmente em tempo constante $O(1)$ e extrai sua mediana local. Em seguida, chama a si mesmo recursivamente para encontrar a *Mediana das Medianas* ($M$). Utiliza $M$ como pivô perfeito para particionar o vetor original: essa escolha matemática garante que pelo menos 30% dos elementos são estritamente menores que $M$ e pelo menos 30% são estritamente maiores, assegurando uma poda de subproblema estrita. O algoritmo recorre unicamente no lado relevante contendo $k$.
+  - **Recorrência & Complexidade**: $T(n) \le T(n/5) + T(7n/10) + O(n) \Rightarrow O(n)$ estrito no pior caso, constituindo um dos algoritmos de seleção determinísticos mais elegantes da ciência da computação.
